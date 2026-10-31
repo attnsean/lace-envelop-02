@@ -1,6 +1,22 @@
 @import "tailwindcss";
 
 @font-face {
+  font-family: 'Abigail';
+  src: url('/fonts/Abigail.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'BritannicBold';
+  src: url('/fonts/BRITANIC.TTF') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'PapeterieScript';
   src: url('/fonts/PapeterieDupontScript.ttf') format('truetype');
   font-weight: normal;
@@ -25,6 +41,14 @@
 }
 
 @font-face {
+  font-family: 'PapeterieSerifItalic';
+  src: url('/fonts/PapeterieDupontSerifItalic.otf') format('opentype');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'ArtisanScript';
   src: url('/fonts/Artisan Script.ttf') format('truetype'),
        url('/fonts/Artisan Script.otf') format('opentype');
@@ -41,41 +65,34 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: 'Abigail';
-  src: url('/fonts/Abigail.otf') format('opentype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
-  --background: #2b0b14;
-  --foreground: #fdfaf6;
-  --burgundy-deep: #1e060d;
-  --burgundy-rich: #2e0915;
-  --burgundy-warm: #420f1f;
-  --burgundy-card: #3a0d1b;
+  --background: #2b0610;
+  --foreground: #ffffff;
+  --burgundy-deep: #22050c;
+  --burgundy-rich: #350711;
+  --burgundy-text: #3c0915;
   --lace-white: #fdfaf7;
   --lace-gold: #e6c88b;
-  --lace-gold-light: #f5e4bc;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --font-abigail: 'Abigail', cursive;
+  --font-britannic: 'BritannicBold', serif;
   --font-papeterie-script: 'PapeterieScript', cursive;
   --font-papeterie-serif: 'PapeterieSerif', serif;
   --font-artisan: 'ArtisanScript', cursive;
   --font-baskerville: 'BaskervilleCustom', serif;
-  --font-abigail: 'Abigail', serif;
 }
 
 body {
-  background-color: #1a040b;
-  color: var(--foreground);
-  font-family: 'BaskervilleCustom', Georgia, serif;
+  background-color: #22050c;
+  color: #ffffff;
+  font-family: 'BritannicBold', Georgia, serif;
   overflow-x: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 /* Custom Scrollbar */
@@ -93,12 +110,20 @@ body {
   background: #7d233e;
 }
 
+.font-abigail {
+  font-family: 'Abigail', cursive;
+}
+
+.font-britannic {
+  font-family: 'BritannicBold', serif;
+}
+
 .font-script {
-  font-family: 'PapeterieScript', cursive, 'Playfair Display', serif;
+  font-family: 'PapeterieScript', cursive;
 }
 
 .font-serif-custom {
-  font-family: 'PapeterieSerif', 'BaskervilleCustom', Georgia, serif;
+  font-family: 'PapeterieSerif', Georgia, serif;
 }
 
 .font-artisan {
@@ -109,37 +134,50 @@ body {
   font-family: 'BaskervilleCustom', Georgia, serif;
 }
 
-/* Subtle Lace Shimmer Effect */
-@keyframes shimmerLace {
-  0% { opacity: 0.85; filter: drop-shadow(0 0 4px rgba(230, 200, 139, 0.2)); }
-  50% { opacity: 1; filter: drop-shadow(0 0 12px rgba(230, 200, 139, 0.45)); }
-  100% { opacity: 0.85; filter: drop-shadow(0 0 4px rgba(230, 200, 139, 0.2)); }
+/* Lace Edge Pattern */
+.lace-pattern-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background-image: url('https://cdn.serastory.com/templates/lace-envelop-02/aset-bg.png');
+  background-repeat: repeat-x;
+  background-position: top;
+  background-size: auto 100%;
+  z-index: 10;
+  pointer-events: none;
 }
 
-.animate-shimmer-lace {
-  animation: shimmerLace 4s ease-in-out infinite;
+.lace-pattern-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background-image: url('https://cdn.serastory.com/templates/lace-envelop-02/aset-bg.png');
+  background-repeat: repeat-x;
+  background-position: bottom;
+  background-size: auto 100%;
+  z-index: 10;
+  pointer-events: none;
 }
 
-/* Floating Petals / Dust */
-@keyframes floatSlow {
-  0% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-12px) rotate(3deg); }
-  100% { transform: translateY(0) rotate(0deg); }
+/* Animations */
+@keyframes pulseSubtle {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
 }
 
-.animate-float-slow {
-  animation: floatSlow 6s ease-in-out infinite;
+.animate-pulse-subtle {
+  animation: pulseSubtle 3s ease-in-out infinite;
 }
 
-/* 3D Envelope Flap Animation */
-.perspective-1000 {
-  perspective: 1000px;
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
-.transform-style-3d {
-  transform-style: preserve-3d;
-}
-
-.backface-hidden {
-  backface-visibility: hidden;
+.animate-float-gentle {
+  animation: floatGentle 4s ease-in-out infinite;
 }

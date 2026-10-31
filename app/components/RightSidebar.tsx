@@ -26,15 +26,16 @@ export default function RightSidebar({
   stats,
   existingRsvp,
 }: RightSidebarProps) {
-  // Opening Envelope State
+  // Envelope & Audio State
   const [isOpen, setIsOpen] = useState(false);
   const [isOpeningFlap, setIsOpeningFlap] = useState(false);
   const [isPlayingMusic, setIsPlayingMusic] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // RSVP Form State
-  const [rsvpName, setRsvpName] = useState(guestName !== 'Guest Name' && guestName !== 'Special Guest' ? guestName : '');
+  // Form State
+  const [rsvpName, setRsvpName] = useState(guestName !== 'Guest Name' && guestName !== 'Tamu Undangan' ? guestName : '');
   const [rsvpPhone, setRsvpPhone] = useState(guest?.phone || '');
+  const [rsvpEmail, setRsvpEmail] = useState(guest?.email || '');
   const [rsvpStatus, setRsvpStatus] = useState<'attending' | 'not_attending'>('attending');
   const [rsvpGuestsCount, setRsvpGuestsCount] = useState(1);
   const [rsvpMessage, setRsvpMessage] = useState('');
@@ -42,13 +43,13 @@ export default function RightSidebar({
   const [rsvpSuccess, setRsvpSuccess] = useState(Boolean(existingRsvp));
   const [wishesList, setWishesList] = useState<any[]>(initialWishes);
 
-  // Copy Feedback State
-  const [copiedAccount, setCopiedAccount] = useState<string | null>(null);
+  // Toast / Copy Feedback State
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Lightbox Modal State
   const [activePhoto, setActivePhoto] = useState<string | null>(null);
 
-  // Countdown State
+  // Countdown Timer State
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -56,910 +57,998 @@ export default function RightSidebar({
     seconds: 0,
   });
 
-  const weddingDateStr = project?.wedding_date || '2026-06-21T08:00:00';
-
+  // Target Wedding Date (26 Juni 2026 / Project Target)
   useEffect(() => {
-    const target = new Date(weddingDateStr).getTime();
-    const updateCountdown = () => {
+    const targetDate = new Date('2026-06-26T08:00:00+07:00').getTime();
+
+    const updateTimer = () => {
       const now = new Date().getTime();
-      const diff = target - now;
-      if (diff > 0) {
+      const difference = targetDate - now;
+
+      if (difference > 0) {
         setTimeLeft({
-          days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-          minutes: Math.floor((diff / 1000 / 60) % 60),
-          seconds: Math.floor((diff / 1000) % 60),
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((difference % (1000 * 60)) / 1000),
         });
       }
     };
-    updateCountdown();
-    const timer = setInterval(updateCountdown, 1000);
-    return () => clearInterval(timer);
-  }, [weddingDateStr]);
 
-  // Audio setup
-  const musicUrl = project?.music_url || '/audio/bgm.mp3';
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
+  // Open Invitation Handler
+  const handleOpenInvitation = () => {
+    setIsOpeningFlap(true);
+
+    // Audio Playback
+    if (audioRef.current) {
+      audioRef.current.play().then(() => {
+        setIsPlayingMusic(true);
+      }).catch((e) => {
+        console.log('Audio autoplay prevented:', e);
+      });
+    }
+
+    // Festive Confetti Burst
+    try {
+      confetti({
+        particleCount: 55,
+        spread: 60,
+        origin: { y: 0.65 },
+        colors: ['#e6c88b', '#ffffff', '#b87d89', '#f5e4bc'],
+      });
+    } catch {}
+
+    setTimeout(() => {
+      setIsOpen(true);
+    }, 650);
+  };
+
+  // Toggle Audio Playback
   const toggleMusic = () => {
     if (!audioRef.current) return;
     if (isPlayingMusic) {
       audioRef.current.pause();
       setIsPlayingMusic(false);
     } else {
-      audioRef.current.play().then(() => setIsPlayingMusic(true)).catch(() => {});
+      audioRef.current.play().then(() => {
+        setIsPlayingMusic(true);
+      }).catch(() => {});
     }
   };
 
-  const handleOpenInvitation = () => {
-    setIsOpeningFlap(true);
-
-    // Audio play
-    if (audioRef.current) {
-      audioRef.current.play().then(() => setIsPlayingMusic(true)).catch(() => {});
-    }
-
-    // Golden confetti burst
-    confetti({
-      particleCount: 80,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#e6c88b', '#f5e4bc', '#d4af37', '#ffffff', '#800020'],
-    });
-
-    setTimeout(() => {
-      setIsOpen(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 700);
-  };
-
-  const handleCopy = (text: string, id: string) => {
+  // Copy to Clipboard with Toast
+  const handleCopyText = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    setCopiedAccount(id);
-    setTimeout(() => setCopiedAccount(null), 2500);
+    setToastMessage(`${label} berhasil disalin!`);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 2800);
   };
 
+  // RSVP Submission Handler
   const handleRsvpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!rsvpName.trim()) return;
+    if (!rsvpName.trim()) {
+      alert('Mohon isi nama Anda');
+      return;
+    }
+
     setIsSubmittingRsvp(true);
-
     try {
-      const projectId = project?.id || 'f93ad18d-cba2-4de0-a86b-b1fadf2783a8';
-      const { error } = await supabase.from('rsvps').insert([
-        {
-          project_id: projectId,
-          guest_name: rsvpName,
-          phone: rsvpPhone || null,
-          status: rsvpStatus,
-          guests_count: rsvpStatus === 'attending' ? rsvpGuestsCount : 0,
-          message: rsvpMessage || null,
-        },
-      ]);
+      const payload: any = {
+        name: rsvpName,
+        phone: rsvpPhone,
+        email: rsvpEmail,
+        status: rsvpStatus,
+        pax: rsvpGuestsCount,
+        notes: rsvpMessage,
+      };
 
-      if (!error) {
-        setRsvpSuccess(true);
-        if (rsvpMessage.trim()) {
-          setWishesList((prev) => [
-            {
-              id: Date.now().toString(),
-              guest_name: rsvpName,
-              message: rsvpMessage,
-              status: rsvpStatus,
-              created_at: new Date().toISOString(),
-            },
-            ...prev,
-          ]);
-        }
-        confetti({
-          particleCount: 50,
-          spread: 60,
-          origin: { y: 0.8 },
-          colors: ['#e6c88b', '#ffffff', '#800020'],
-        });
+      if (project?.id) {
+        payload.project_id = project.id;
+      }
+      if (guest?.id) {
+        payload.guest_id = guest.id;
+      }
+
+      const { data, error } = await supabase.from('rsvps').insert([payload]).select();
+
+      if (error) {
+        console.error('RSVP insert error:', error);
+      }
+
+      setRsvpSuccess(true);
+      setToastMessage('Konfirmasi kehadiran berhasil dikirim! Terima kasih.');
+
+      if (rsvpMessage.trim()) {
+        setWishesList((prev) => [
+          {
+            id: Date.now().toString(),
+            name: rsvpName,
+            notes: rsvpMessage,
+            created_at: new Date().toISOString(),
+          },
+          ...prev,
+        ]);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error submitting RSVP:', err);
     } finally {
       setIsSubmittingRsvp(false);
+      setTimeout(() => setToastMessage(null), 3500);
     }
   };
 
-  const brideName = formatPersonName(project?.bride_nickname) || 'Andrea';
-  const groomName = formatPersonName(project?.groom_nickname) || 'Daniel';
-  const brideFull = formatPersonName(project?.bride_name) || 'Andrea Stefani';
-  const groomFull = formatPersonName(project?.groom_name) || 'Daniel Sianipar';
-
-  // Sample or dynamic gallery images
-  const galleryPhotos = project?.photo_urls?.length
-    ? project.photo_urls
-    : [
-        'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1000&q=80',
-        'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1000&q=80',
-        'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1000&q=80',
-        'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=1000&q=80',
-      ];
+  // Gallery Photos matching PDF Page 10
+  const galleryItems = [
+    { src: '/photos/gallery-1.jpg', title: 'A Beautiful Stroll Together' },
+    { src: '/photos/gallery-2.jpg', title: 'Under The Sacred Veil' },
+    { src: '/photos/gallery-3.jpg', title: 'Mountain Horizon' },
+    { src: '/photos/gallery-4.jpg', title: 'Towards Our Forever' },
+    { src: '/photos/gallery-5.jpg', title: 'Running Hand in Hand' },
+  ];
 
   return (
-    <div className="relative w-full md:w-[42%] lg:w-[38%] min-h-[100dvh] bg-[#220710] text-[#fdfaf6] flex flex-col items-center overflow-y-auto overflow-x-hidden selection:bg-[#7d233e] selection:text-white shadow-2xl">
-      {/* Background Audio */}
-      <audio ref={audioRef} loop src={musicUrl} preload="auto" />
+    <div className="relative w-full md:w-[42%] lg:w-[38%] h-[100dvh] overflow-y-auto overflow-x-hidden bg-[#22050c] text-white select-none scroll-smooth">
+      {/* Background Audio Element */}
+      <audio ref={audioRef} src="/audio/bgm.mp3" loop preload="auto" />
 
-      {/* Floating Music Toggle (when open) */}
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-[#350711]/95 text-[#fdfaf7] px-6 py-2.5 rounded-full border border-[#e6c88b]/70 shadow-2xl backdrop-blur-md font-britannic text-xs sm:text-sm tracking-wide transition-all animate-bounce">
+          ✨ {toastMessage}
+        </div>
+      )}
+
+      {/* Floating Audio Play / Pause Button */}
       {isOpen && (
         <button
-          type="button"
           onClick={toggleMusic}
-          className={`fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full flex items-center justify-center border border-[#e6c88b]/40 shadow-2xl backdrop-blur-md transition-all duration-300 ${
-            isPlayingMusic ? 'bg-[#5c182d]/90 text-[#f5e4bc] animate-spin-slow' : 'bg-black/60 text-neutral-400'
-          }`}
-          title={isPlayingMusic ? 'Mute Musik' : 'Putar Musik'}
+          aria-label="Toggle background audio"
+          className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-[#350711]/90 border border-[#e6c88b] text-[#e6c88b] flex items-center justify-center shadow-xl backdrop-blur-md hover:scale-105 active:scale-95 transition-all"
         >
           {isPlayingMusic ? (
-            <svg className="w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+            <svg className="w-5 h-5 animate-spin" style={{ animationDuration: '4s' }} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z" />
             </svg>
           ) : (
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M4.27 3L3 4.27l9 9v.28c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4v-1.73l4.27 4.27c-.4.26-.85.46-1.34.46-2.21 0-4-1.79-4-4s1.79-4 4-4c.49 0 .94.2 1.34.46L19.73 21 21 19.73 4.27 3zM14 7h4V3h-6v5.18l2 2V7z" />
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
             </svg>
           )}
         </button>
       )}
 
       {/* ========================================================================= */}
-      {/* 1. ENVELOPE COVER (Click to Open with 3D Flap & Lace Border)               */}
+      {/* COVER SCREEN: 01 LACE - BURGUNDY - COVER CLICK TO OPEN                   */}
       {/* ========================================================================= */}
-      {!isOpen && (
-        <div className="relative w-full min-h-[100dvh] flex flex-col items-center justify-between p-6 sm:p-8 bg-[#1e060e] overflow-hidden z-40">
-          {/* Burgundy Texture Background */}
-          <div
-            className="absolute inset-0 opacity-40 bg-cover bg-center pointer-events-none"
-            style={{ backgroundImage: `url(${LACE_ASSETS.burgundyBg})` }}
-          />
+      {!isOpen ? (
+        <section
+          className="relative min-h-[100dvh] w-full flex flex-col items-center justify-between py-10 px-6 bg-cover bg-center text-center overflow-hidden"
+          style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
+        >
+          {/* Top Lace Pattern Strip */}
+          <div className="lace-pattern-top" />
 
-          {/* Golden Ambient Lights */}
-          <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-[#e6c88b]/10 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-[#e6c88b]/10 blur-3xl pointer-events-none" />
+          {/* Top Spacing */}
+          <div className="pt-2" />
 
-          {/* Top Label */}
-          <div className="relative z-10 text-center pt-8">
-            <span className="text-[10px] sm:text-xs uppercase tracking-[0.35em] text-[#e6c88b] font-serif-custom font-semibold">
-              The Wedding Invitation
-            </span>
-          </div>
-
-          {/* Central Burgundy Envelope Box */}
-          <div className="relative z-10 w-full max-w-[340px] sm:max-w-[370px] flex flex-col items-center my-auto perspective-1000">
-            {/* 3D Envelope Wrapper */}
-            <div className="relative w-full rounded-2xl bg-gradient-to-b from-[#3b0d1b] to-[#250711] border border-[#e6c88b]/30 shadow-2xl p-6 sm:p-8 flex flex-col items-center text-center overflow-hidden">
-              {/* Subtle Lace Corner Motifs */}
-              <div className="absolute top-0 left-0 w-20 h-20 opacity-30 pointer-events-none">
-                <img src={LACE_ASSETS.heroLaceCorner} alt="Lace corner" className="w-full h-full object-contain" />
-              </div>
-              <div className="absolute top-0 right-0 w-20 h-20 opacity-30 pointer-events-none rotate-90">
-                <img src={LACE_ASSETS.heroLaceCorner} alt="Lace corner" className="w-full h-full object-contain" />
-              </div>
-
-              {/* Monogram Seal / Medallion */}
-              <div className="relative w-20 h-20 sm:w-24 sm:h-24 mb-4 flex items-center justify-center">
-                <img
-                  src={LACE_ASSETS.envelopeSeal}
-                  alt="Lace Wax Seal"
-                  className={`w-full h-full object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] transition-transform duration-700 ${
-                    isOpeningFlap ? 'scale-125 opacity-0' : 'animate-shimmer-lace'
-                  }`}
-                />
-              </div>
-
-              {/* Couple Names */}
-              <h1 className="font-script text-4xl sm:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-[#fdfaf6] via-[#f5e4bc] to-[#e6c88b] leading-tight mb-1">
-                {brideName} &amp; {groomName}
-              </h1>
-
-              <div className="w-16 h-[1px] bg-gradient-to-r from-transparent via-[#e6c88b] to-transparent my-3" />
-
-              {/* Wedding Date */}
-              <p className="text-xs tracking-[0.25em] text-[#e6c88b]/90 uppercase font-serif-custom mb-6">
-                21 . 06 . 2026
-              </p>
-
-              {/* Guest Card Badge */}
-              <div className="w-full bg-[#1b040b]/80 border border-[#e6c88b]/20 rounded-xl p-4 mb-6 backdrop-blur-sm">
-                <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-serif-custom mb-1">
-                  Kepada Yth. Bpk/Ibu/Saudara/i:
-                </p>
-                <p className="text-base sm:text-lg font-serif-custom font-bold text-[#fdfaf6] capitalize tracking-wide">
-                  {guestName}
-                </p>
-                <p className="text-[9px] text-[#e6c88b]/70 italic mt-0.5 font-serif-custom">
-                  *Mohon maaf bila ada kesalahan penulisan nama/gelar
-                </p>
-              </div>
-
-              {/* Open Button */}
-              <button
-                type="button"
-                onClick={handleOpenInvitation}
-                disabled={isOpeningFlap}
-                className="group relative px-6 py-3 rounded-full bg-gradient-to-r from-[#801431] via-[#9e1c3e] to-[#801431] hover:brightness-110 text-white font-serif-custom text-xs font-bold uppercase tracking-[0.2em] shadow-[0_8px_20px_rgba(158,28,62,0.45)] border border-[#e6c88b]/50 transition-all duration-300 transform active:scale-95 flex items-center gap-2 cursor-pointer"
-              >
-                <svg
-                  className="w-4 h-4 text-[#e6c88b] transition-transform duration-300 group-hover:rotate-12"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span>{isOpeningFlap ? 'Membuka...' : 'Buka Undangan'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Footer note */}
-          <div className="relative z-10 text-center pb-4">
-            <p className="text-[10px] tracking-widest text-neutral-500 uppercase font-serif-custom">
-              SeraStory Luxury Burgundy Lace Edition
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 2. MAIN INVITATION CONTENT (Revealed After Envelope Opened)               */}
-      {/* ========================================================================= */}
-      {isOpen && (
-        <main className="relative w-full flex flex-col items-center bg-[#250711] text-[#fdfaf6] animate-fadeIn transition-opacity duration-700">
-          {/* Subtle Continuous Burgundy Texture Wallpaper */}
-          <div
-            className="absolute inset-0 opacity-25 bg-repeat pointer-events-none"
-            style={{ backgroundImage: `url(${LACE_ASSETS.burgundyBg})`, backgroundSize: '400px' }}
-          />
-
-          {/* Floating Lace Particles in Background */}
-          <div className="absolute top-20 right-4 w-32 h-32 opacity-15 pointer-events-none animate-float-slow">
-            <img src={LACE_ASSETS.heroLaceMedallion} alt="Lace medallion" className="w-full h-full object-contain" />
-          </div>
-          <div className="absolute top-[45%] left-2 w-36 h-36 opacity-10 pointer-events-none animate-float-slow" style={{ animationDelay: '3s' }}>
-            <img src={LACE_ASSETS.heroLaceMedallion} alt="Lace medallion" className="w-full h-full object-contain" />
-          </div>
-
-          {/* ===================================================================== */}
-          {/* HERO SECTION: SAVE THE DATE                                           */}
-          {/* ===================================================================== */}
-          <section className="relative w-full min-h-[92dvh] flex flex-col items-center justify-center p-6 text-center border-b border-[#e6c88b]/15">
-            {/* Top Lace Banner */}
-            <div className="w-48 sm:w-56 mb-4 opacity-90">
-              <img src={LACE_ASSETS.heroLaceBanner} alt="Lace Banner" className="w-full h-auto object-contain" />
-            </div>
-
-            <span className="text-xs uppercase tracking-[0.35em] text-[#e6c88b] font-serif-custom font-semibold mb-2">
-              Save The Date
-            </span>
-
-            {/* Couple Script Names */}
-            <h1 className="font-script text-5xl sm:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-[#fdfaf6] via-[#f5e4bc] to-[#e6c88b] leading-tight my-2">
-              {brideName}
-            </h1>
-            <span className="font-script text-3xl sm:text-4xl text-[#e6c88b] my-1">&amp;</span>
-            <h1 className="font-script text-5xl sm:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-[#fdfaf6] via-[#f5e4bc] to-[#e6c88b] leading-tight mb-4">
-              {groomName}
-            </h1>
-
-            {/* Couple Portrait with Lace Arch Frame */}
-            <div className="relative w-64 h-80 sm:w-72 sm:h-96 my-6 flex items-center justify-center">
-              {/* Photo */}
-              <div className="absolute inset-4 rounded-t-full overflow-hidden border border-[#e6c88b]/30 shadow-2xl">
-                <Image
-                  src={galleryPhotos[0]}
-                  alt="Couple Prewedding"
-                  fill
-                  className="object-cover object-center brightness-[0.88] hover:scale-105 transition-transform duration-700"
-                  priority
-                />
-              </div>
-              {/* Lace Cutout Frame Overlay */}
+          {/* Interactive Envelope with Doily & Wax Seal */}
+          <div className="relative w-full max-w-[340px] flex flex-col items-center">
+            {/* Heart Lace Doily peeking out from envelope */}
+            <div
+              className={`relative z-10 w-[240px] h-[220px] -mb-16 transition-all duration-700 ease-out ${
+                isOpeningFlap ? '-translate-y-16 scale-105' : 'translate-y-0'
+              }`}
+            >
               <img
-                src={LACE_ASSETS.heroLaceFrame}
-                alt="Lace Frame"
-                className="absolute inset-0 w-full h-full object-contain pointer-events-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
+                src={LACE_ASSETS.coverHeartDoily}
+                alt="Heart Lace Doily"
+                className="w-full h-full object-contain filter drop-shadow-md"
+              />
+              {/* Text on Heart Doily */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pt-3 text-[#3c0915] pointer-events-none">
+                <span className="font-abigail text-2xl sm:text-3xl leading-tight">Save The Date</span>
+                <span className="font-britannic text-sm sm:text-base font-bold tracking-wider mt-0.5">26.06.26</span>
+              </div>
+            </div>
+
+            {/* Cream Envelope with Wax Seal & Flower */}
+            <div className="relative z-20 w-full max-w-[320px] filter drop-shadow-2xl cursor-pointer" onClick={handleOpenInvitation}>
+              <img
+                src={LACE_ASSETS.coverEnvelope}
+                alt="Cover Envelope"
+                className="w-full h-auto object-contain"
+              />
+              {/* "Click to open" script on envelope flap */}
+              <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none">
+                <span className="font-abigail text-2xl sm:text-3xl text-[#3c0915] tracking-wide">
+                  Click to open
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Guest Identity & Action Trigger */}
+          <div className="relative z-30 flex flex-col items-center max-w-xs w-full pb-4">
+            <p className="font-britannic text-xs text-neutral-200 tracking-wider uppercase mb-1">
+              Kepada Yth. Bapak/Ibu/Saudara/i:
+            </p>
+            <div className="px-6 py-2 rounded-full bg-[#350711]/85 border border-[#e6c88b]/60 shadow-lg backdrop-blur-sm mb-4">
+              <h2 className="font-abigail text-2xl sm:text-3xl text-[#fdfaf7] leading-none">
+                {guestName}
+              </h2>
+            </div>
+
+            <button
+              onClick={handleOpenInvitation}
+              className="px-8 py-3 rounded-full bg-gradient-to-r from-[#e6c88b] via-[#f5e4bc] to-[#e6c88b] text-[#3c0915] font-britannic font-bold text-xs uppercase tracking-[0.25em] shadow-xl hover:scale-105 active:scale-95 transition-all animate-pulse-subtle"
+            >
+              Buka Undangan
+            </button>
+          </div>
+
+          {/* Bottom Lace Pattern Strip */}
+          <div className="lace-pattern-bottom" />
+        </section>
+      ) : (
+        /* ========================================================================= */
+        /* INVITATION CONTENT: ALL 10 PAGES IDENTICAL TO 01 LACE - BURGUNDY.PDF      */
+        /* ========================================================================= */
+        <div className="relative w-full flex flex-col">
+
+          {/* ----------------------------------------------------------------------- */}
+          {/* PAGE 1: SAVE THE DATE (HERO COMPOSITION)                               */}
+          {/* ----------------------------------------------------------------------- */}
+          <section
+            className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center overflow-hidden"
+            style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
+          >
+            <div className="lace-pattern-top" />
+
+            {/* Silver Oval Serving Platter / Tray */}
+            <div className="relative w-full max-w-[340px] aspect-[3378/4937] flex items-center justify-center filter drop-shadow-2xl">
+              <img
+                src={LACE_ASSETS.silverTrayHal1}
+                alt="Silver Platter"
+                className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+              />
+
+              {/* Angled Mountain Envelope (Upper Center) */}
+              <div className="absolute top-[14%] left-[10%] w-[58%] -rotate-[12deg] z-10 filter drop-shadow-md">
+                <img
+                  src={LACE_ASSETS.mountainCardHal1}
+                  alt="Save The Date Watercolor"
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+
+              {/* Heart Silver Locket (Upper Right) with Couple Photos */}
+              <div className="absolute top-[28%] right-[4%] w-[52%] z-20 filter drop-shadow-lg">
+                <div className="relative w-full">
+                  <img
+                    src={LACE_ASSETS.heartLocketHal1}
+                    alt="Silver Locket"
+                    className="w-full h-auto object-contain relative z-20 pointer-events-none"
+                  />
+                  {/* Photo in Left Heart */}
+                  <div className="absolute top-[18%] left-[11%] w-[38%] h-[68%] rounded-full overflow-hidden z-10">
+                    <img src="/photos/locket-left.jpg" alt="Couple" className="w-full h-full object-cover" />
+                  </div>
+                  {/* Photo in Right Heart */}
+                  <div className="absolute top-[26%] right-[10%] w-[38%] h-[68%] rounded-full overflow-hidden z-10">
+                    <img src="/photos/locket-right.jpg" alt="Couple" className="w-full h-full object-cover" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Heart Lace Mesh Doily (Center) with Andrea & Daniel */}
+              <div className="absolute bottom-[24%] left-[12%] w-[76%] z-15 filter drop-shadow-md">
+                <div className="relative w-full">
+                  <img
+                    src={LACE_ASSETS.heartMeshHal1}
+                    alt="Heart Doily"
+                    className="w-full h-auto object-contain"
+                  />
+                  {/* Couple Names */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-[#3c0915] pointer-events-none pt-2">
+                    <h1 className="font-abigail text-3xl sm:text-4xl leading-tight">Andrea</h1>
+                    <span className="font-abigail text-xl sm:text-2xl leading-none">&amp;</span>
+                    <h1 className="font-abigail text-3xl sm:text-4xl leading-tight">Daniel</h1>
+                  </div>
+                </div>
+              </div>
+
+              {/* Three White Roses Bouquet (Bottom Left) */}
+              <div className="absolute -bottom-[2%] left-[10%] w-[48%] z-30 filter drop-shadow-lg">
+                <img
+                  src={LACE_ASSETS.whiteRosesHal1}
+                  alt="White Roses Bouquet"
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+            </div>
+
+            {/* Subtle Scroll Down Prompt */}
+            <div className="mt-4 flex flex-col items-center opacity-70 animate-bounce">
+              <span className="font-britannic text-[11px] tracking-widest uppercase text-neutral-300">Scroll Down</span>
+              <svg className="w-4 h-4 text-neutral-300 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </div>
+
+            <div className="lace-pattern-bottom" />
+          </section>
+
+          {/* ----------------------------------------------------------------------- */}
+          {/* PAGE 2: SCRIPTURE QUOTE (BIBLE VERSE)                                  */}
+          {/* ----------------------------------------------------------------------- */}
+          <section
+            className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center overflow-hidden"
+            style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
+          >
+            <div className="lace-pattern-top" />
+
+            {/* White Decorative Lace Card */}
+            <div className="relative w-full max-w-[340px] aspect-[3536/4514] flex items-center justify-center filter drop-shadow-2xl">
+              <img
+                src={LACE_ASSETS.laceFrameHal2}
+                alt="Lace Border Frame"
+                className="w-full h-full object-contain pointer-events-none"
+              />
+
+              {/* Scripture Text inside Frame */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center px-12 sm:px-14 text-center text-[#3c0915]">
+                <p className="font-britannic text-xs sm:text-sm leading-relaxed sm:leading-loose tracking-wide">
+                  &ldquo;Berdua lebih baik dari pada seorang diri, karena mereka menerima upah yang baik dalam jeri lelah mereka. Karena kalau mereka jatuh, yang seorang mengangkat temannya... Dan tali tiga lembar tak mudah putus.&rdquo;
+                </p>
+                <div className="w-12 h-[1px] bg-[#3c0915]/40 my-3" />
+                <p className="font-britannic text-xs sm:text-sm font-bold tracking-wider">
+                  Pengkhotbah 12 -4:9 (TB)
+                </p>
+              </div>
+            </div>
+
+            <div className="lace-pattern-bottom" />
+          </section>
+
+          {/* ----------------------------------------------------------------------- */}
+          {/* PAGE 3: THE COUPLE (ANDREA & DANIEL)                                    */}
+          {/* ----------------------------------------------------------------------- */}
+          <section
+            className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center py-12 px-6 bg-cover bg-center overflow-hidden space-y-8"
+            style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
+          >
+            <div className="lace-pattern-top" />
+
+            {/* Andrea (Bride) Row */}
+            <div className="w-full max-w-sm flex items-center justify-start space-x-4">
+              <div className="relative w-36 sm:w-40 aspect-[2173/2767] shrink-0 filter drop-shadow-xl">
+                <img
+                  src={LACE_ASSETS.baroqueGoldFrameHal3}
+                  alt="Gold Frame"
+                  className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
+                />
+                <div className="absolute inset-[15%] rounded-full overflow-hidden z-10">
+                  <img src="/photos/bride-oval.jpg" alt="Andrea" className="w-full h-full object-cover grayscale" />
+                </div>
+              </div>
+              <div className="flex flex-col text-left">
+                <h2 className="font-abigail text-4xl sm:text-5xl text-white leading-tight">Andrea</h2>
+                <p className="font-britannic text-xs text-neutral-200 uppercase tracking-widest mt-1">
+                  Putri dari Bapak Samuel
+                </p>
+                <p className="font-britannic text-xs text-neutral-200 uppercase tracking-widest">
+                  &amp; Ibu Ruth
+                </p>
+              </div>
+            </div>
+
+            {/* Daniel (Groom) Row */}
+            <div className="w-full max-w-sm flex items-center justify-end space-x-4">
+              <div className="flex flex-col text-right">
+                <h2 className="font-abigail text-4xl sm:text-5xl text-white leading-tight">Daniel</h2>
+                <p className="font-britannic text-xs text-neutral-200 uppercase tracking-widest mt-1">
+                  Putra dari Bapak Simon
+                </p>
+                <p className="font-britannic text-xs text-neutral-200 uppercase tracking-widest">
+                  &amp; Ibu Silvia
+                </p>
+              </div>
+              <div className="relative w-36 sm:w-40 aspect-[2173/2767] shrink-0 filter drop-shadow-xl">
+                <img
+                  src={LACE_ASSETS.baroqueGoldFrameHal3}
+                  alt="Gold Frame"
+                  className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
+                />
+                <div className="absolute inset-[15%] rounded-full overflow-hidden z-10">
+                  <img src="/photos/groom-oval.jpg" alt="Daniel" className="w-full h-full object-cover grayscale" />
+                </div>
+              </div>
+            </div>
+
+            <div className="lace-pattern-bottom" />
+          </section>
+
+          {/* ----------------------------------------------------------------------- */}
+          {/* PAGE 4: OUR STORY                                                      */}
+          {/* ----------------------------------------------------------------------- */}
+          <section
+            className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden"
+            style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
+          >
+            <div className="lace-pattern-top" />
+
+            {/* Rose-Embossed Gold Frame with Veil Photo */}
+            <div className="relative w-44 sm:w-48 aspect-[3124/3669] filter drop-shadow-2xl mb-4">
+              <img
+                src={LACE_ASSETS.floralGoldFrameHal4}
+                alt="Rose Gold Frame"
+                className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
+              />
+              <div className="absolute inset-[16%] rounded-full overflow-hidden z-10">
+                <img src="/photos/our-story-oval.jpg" alt="Our Story" className="w-full h-full object-cover" />
+              </div>
+            </div>
+
+            <h2 className="font-abigail text-4xl sm:text-5xl text-white mb-3">Our Story</h2>
+
+            <p className="font-britannic text-xs sm:text-sm text-neutral-200 leading-relaxed sm:leading-loose max-w-sm px-4">
+              Berawal dari perkenalan sederhana di sebuah tempat kopi pada tahun 2020, takdir perlahan menuntun langkah kami untuk saling mengenal lebih dekat. Lewat tawa, beda pendapat, dan dukungan yang tak pernah surut di setiap musim kehidupan, kami yakin untuk melangkah bersama dan merajut masa depan dalam ikatan suci pernikahan.
+            </p>
+
+            <div className="lace-pattern-bottom" />
+          </section>
+
+          {/* ----------------------------------------------------------------------- */}
+          {/* PAGE 5: MAKE OUR DAY SPECIAL (COUNTDOWN & FAST RSVP)                   */}
+          {/* ----------------------------------------------------------------------- */}
+          <section
+            className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12"
+            style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
+          >
+            <div className="lace-pattern-top" />
+
+            {/* Double Heart Silver Locket */}
+            <div className="relative w-48 sm:w-56 filter drop-shadow-xl mb-3">
+              <img
+                src={LACE_ASSETS.silverLocketHal5}
+                alt="Silver Locket"
+                className="w-full h-auto object-contain relative z-20 pointer-events-none"
+              />
+              <div className="absolute top-[18%] left-[11%] w-[38%] h-[68%] rounded-full overflow-hidden z-10">
+                <img src="/photos/locket-left.jpg" alt="Couple" className="w-full h-full object-cover" />
+              </div>
+              <div className="absolute top-[26%] right-[10%] w-[38%] h-[68%] rounded-full overflow-hidden z-10">
+                <img src="/photos/locket-right.jpg" alt="Couple" className="w-full h-full object-cover" />
+              </div>
+            </div>
+
+            <h3 className="font-serif-custom text-[11px] sm:text-xs tracking-[0.3em] uppercase text-neutral-200">
+              MAKE OUR DAY SPECIAL
+            </h3>
+            <h2 className="font-britannic text-4xl sm:text-5xl text-white font-bold my-1">
+              26.06.26
+            </h2>
+
+            {/* Countdown Clock */}
+            <div className="flex items-center justify-center space-x-2 sm:space-x-3 my-3">
+              {[
+                { label: 'Hari', val: timeLeft.days },
+                { label: 'Jam', val: timeLeft.hours },
+                { label: 'Menit', val: timeLeft.minutes },
+                { label: 'Detik', val: timeLeft.seconds },
+              ].map((item, i) => (
+                <div key={i} className="flex flex-col items-center px-3 py-1.5 rounded-xl bg-[#350711]/90 border border-[#e6c88b]/40 min-w-[54px]">
+                  <span className="font-britannic text-base sm:text-lg font-bold text-[#fdfaf7]">{item.val}</span>
+                  <span className="font-serif-custom text-[9px] uppercase tracking-wider text-[#e6c88b]">{item.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <p className="font-britannic text-xs text-neutral-200 max-w-xs mb-4">
+              Let us know if you can celebrate this unforgettable moment with us.
+            </p>
+
+            {/* Quick RSVP Form with Original Pill Elements */}
+            <form onSubmit={handleRsvpSubmit} className="w-full max-w-xs space-y-2.5 text-left">
+              <div>
+                <label className="font-britannic text-[11px] uppercase text-neutral-300 ml-3">Your Name</label>
+                <input
+                  type="text"
+                  value={rsvpName}
+                  onChange={(e) => setRsvpName(e.target.value)}
+                  placeholder="Tamu Undangan"
+                  className="w-full h-10 px-4 rounded-full bg-[#350711]/85 border border-[#ffffff]/30 text-white placeholder-neutral-400 font-britannic text-xs focus:outline-none focus:border-[#e6c88b]"
+                />
+              </div>
+
+              <div>
+                <label className="font-britannic text-[11px] uppercase text-neutral-300 ml-3">Whatsapp/ No. Hp</label>
+                <input
+                  type="tel"
+                  value={rsvpPhone}
+                  onChange={(e) => setRsvpPhone(e.target.value)}
+                  placeholder="08xxxxxxxxxx"
+                  className="w-full h-10 px-4 rounded-full bg-[#350711]/85 border border-[#ffffff]/30 text-white placeholder-neutral-400 font-britannic text-xs focus:outline-none focus:border-[#e6c88b]"
+                />
+              </div>
+
+              <div>
+                <label className="font-britannic text-[11px] uppercase text-neutral-300 ml-3">Email</label>
+                <input
+                  type="email"
+                  value={rsvpEmail}
+                  onChange={(e) => setRsvpEmail(e.target.value)}
+                  placeholder="email@domain.com"
+                  className="w-full h-10 px-4 rounded-full bg-[#350711]/85 border border-[#ffffff]/30 text-white placeholder-neutral-400 font-britannic text-xs focus:outline-none focus:border-[#e6c88b]"
+                />
+              </div>
+
+              <div>
+                <label className="font-britannic text-[11px] uppercase text-neutral-300 ml-3">Are you coming?</label>
+                <div className="flex space-x-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setRsvpStatus('attending')}
+                    className={`flex-1 py-2 px-2 rounded-full font-britannic text-[11px] tracking-wide transition-all ${
+                      rsvpStatus === 'attending'
+                        ? 'bg-[#e6c88b] text-[#3c0915] font-bold shadow-md'
+                        : 'bg-[#350711]/85 border border-white/20 text-neutral-300'
+                    }`}
+                  >
+                    Absolutely, wouldn&quot;t miss it!
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRsvpStatus('not_attending')}
+                    className={`flex-1 py-2 px-2 rounded-full font-britannic text-[11px] tracking-wide transition-all ${
+                      rsvpStatus === 'not_attending'
+                        ? 'bg-[#e6c88b] text-[#3c0915] font-bold shadow-md'
+                        : 'bg-[#350711]/85 border border-white/20 text-neutral-300'
+                    }`}
+                  >
+                    Sadly, cannot make it
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-britannic text-[11px] uppercase text-neutral-300 ml-3">Jumlah Tamu, Pax Yang Hadir</label>
+                <select
+                  value={rsvpGuestsCount}
+                  onChange={(e) => setRsvpGuestsCount(Number(e.target.value))}
+                  className="w-full h-10 px-4 rounded-full bg-[#350711]/85 border border-[#ffffff]/30 text-white font-britannic text-xs focus:outline-none focus:border-[#e6c88b]"
+                >
+                  <option value={1} className="bg-[#22050c]">1 orang</option>
+                  <option value={2} className="bg-[#22050c]">2 orang</option>
+                  <option value={3} className="bg-[#22050c]">3 orang</option>
+                  <option value={4} className="bg-[#22050c]">4 orang</option>
+                </select>
+              </div>
+
+              {/* RSVP NOW Button using authentic graphic */}
+              <div className="pt-2 flex justify-center">
+                <button
+                  type="submit"
+                  disabled={isSubmittingRsvp}
+                  className="relative w-48 hover:scale-105 active:scale-95 transition-transform"
+                >
+                  <img src={LACE_ASSETS.rsvpNowBtn} alt="RSVP NOW" className="w-full h-auto object-contain filter drop-shadow-lg" />
+                </button>
+              </div>
+            </form>
+
+            <div className="lace-pattern-bottom" />
+          </section>
+
+          {/* ----------------------------------------------------------------------- */}
+          {/* PAGE 6: THE DETAIL (AKAD & RESEPSI SCHEDULE)                           */}
+          {/* ----------------------------------------------------------------------- */}
+          <section
+            className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12"
+            style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
+          >
+            <div className="lace-pattern-top" />
+
+            <h2 className="font-abigail text-4xl sm:text-5xl text-white mb-4">The Detail</h2>
+
+            {/* Silver Oval Mirror with White Satin Lace Bows */}
+            <div className="relative w-full max-w-[340px] aspect-[3378/4937] flex items-center justify-center filter drop-shadow-2xl">
+              <img
+                src={LACE_ASSETS.silverTrayHal6}
+                alt="Silver Mirror"
+                className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+              />
+
+              {/* Top-Left Ribbon Bow */}
+              <div className="absolute -top-[2%] -left-[4%] w-24 sm:w-28 z-30 filter drop-shadow-lg">
+                <img src={LACE_ASSETS.whiteBowHal6A} alt="Bow" className="w-full h-auto object-contain" />
+              </div>
+
+              {/* Bottom-Right Ribbon Bow */}
+              <div className="absolute -bottom-[2%] -right-[4%] w-24 sm:w-28 z-30 filter drop-shadow-lg">
+                <img src={LACE_ASSETS.whiteBowHal6B} alt="Bow" className="w-full h-auto object-contain" />
+              </div>
+
+              {/* Event Content Inside Mirror */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center px-10 text-[#3c0915] text-center">
+                <h3 className="font-abigail text-3xl sm:text-4xl leading-tight">Akad</h3>
+                <p className="font-britannic text-xs font-bold mt-1">Minggu, 21 Juni 2025</p>
+                <p className="font-britannic text-xs">Pukul 10.00 - 08.00 WIB</p>
+                <p className="font-baskerville text-xs font-semibold text-[#5c182d]">Gereja HKBP Bandung Barat</p>
+
+                <div className="w-16 h-[1px] bg-[#3c0915]/30 my-4" />
+
+                <h3 className="font-abigail text-3xl sm:text-4xl leading-tight">Resepsi</h3>
+                <p className="font-britannic text-xs font-bold mt-1">Minggu, 21 Juni 2025</p>
+                <p className="font-britannic text-xs">Pukul 10.00 - selesai</p>
+                <p className="font-baskerville text-xs font-semibold text-[#5c182d]">Manten Ballroom</p>
+
+                {/* Google Maps Button */}
+                <a
+                  href="https://maps.google.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 px-6 py-1.5 rounded-full bg-[#fdfaf7] border border-[#3c0915]/50 text-[#3c0915] font-britannic text-xs font-bold tracking-widest shadow-md hover:bg-[#3c0915] hover:text-white transition-all uppercase"
+                >
+                  GOOGLE MAPS
+                </a>
+              </div>
+            </div>
+
+            <div className="lace-pattern-bottom" />
+          </section>
+
+          {/* ----------------------------------------------------------------------- */}
+          {/* PAGE 7: DRESS CODE                                                     */}
+          {/* ----------------------------------------------------------------------- */}
+          <section
+            className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12"
+            style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
+          >
+            <div className="lace-pattern-top" />
+
+            <h2 className="font-abigail text-4xl sm:text-5xl text-white mb-6">Dress Code</h2>
+
+            {/* Groom & Bride Line Art Illustration */}
+            <div className="relative w-48 sm:w-56 aspect-[2287/3130] filter drop-shadow-xl mb-6">
+              <img
+                src={LACE_ASSETS.dressCodeLineArtHal7}
+                alt="Dress Code Illustration"
+                className="w-full h-full object-contain filter invert"
               />
             </div>
 
-            <p className="text-xs sm:text-sm tracking-[0.25em] text-[#e6c88b] uppercase font-serif-custom font-medium mt-2">
-              Minggu, 21 Juni 2026
-            </p>
-          </section>
-
-          {/* ===================================================================== */}
-          {/* SECTION 2: BIBLICAL VERSE / QUOTE                                     */}
-          {/* ===================================================================== */}
-          <section className="relative w-full py-16 px-6 sm:px-8 flex flex-col items-center text-center border-b border-[#e6c88b]/15 bg-gradient-to-b from-transparent via-[#1d050c]/50 to-transparent">
-            <div className="relative w-full max-w-[340px] sm:max-w-[380px] p-8 sm:p-10 rounded-2xl bg-[#330b17]/80 border border-[#e6c88b]/25 shadow-xl flex flex-col items-center">
-              {/* Decorative Lace Header */}
-              <div className="w-16 h-16 mb-4 opacity-70">
-                <img src={LACE_ASSETS.heroLaceMedallion} alt="Medallion" className="w-full h-full object-contain" />
-              </div>
-
-              <blockquote className="font-serif-custom italic text-xs sm:text-sm text-neutral-200 leading-relaxed mb-4">
-                &ldquo;Berdua lebih baik dari pada seorang diri, karena mereka menerima upah yang baik dalam jeri lelah mereka. Karena kalau mereka jatuh, yang seorang mengangkat temannya... Dan tali tiga lembar tak mudah putus.&rdquo;
-              </blockquote>
-
-              <cite className="font-serif-custom not-italic text-[11px] uppercase tracking-widest text-[#e6c88b] font-bold">
-                Pengkhotbah 4 : 9-12 (TB)
-              </cite>
-            </div>
-          </section>
-
-          {/* ===================================================================== */}
-          {/* SECTION 3: BRIDE & GROOM PROFILE                                      */}
-          {/* ===================================================================== */}
-          <section className="relative w-full py-16 px-6 sm:px-8 flex flex-col items-center text-center border-b border-[#e6c88b]/15">
-            <span className="text-[10px] sm:text-xs uppercase tracking-[0.35em] text-[#e6c88b] font-serif-custom mb-2">
-              Pasangan Pengantin
-            </span>
-            <h2 className="font-script text-4xl sm:text-5xl text-[#f5e4bc] mb-10">
-              Mempelai Kami
-            </h2>
-
-            <div className="w-full max-w-md space-y-12">
-              {/* Groom Profile */}
-              <div className="flex flex-col items-center">
-                <div className="relative w-44 h-56 sm:w-48 sm:h-64 rounded-full overflow-hidden border-2 border-[#e6c88b]/40 shadow-2xl mb-4">
-                  <Image
-                    src={project?.groom_photo_url || galleryPhotos[1]}
-                    alt="Daniel Sianipar"
-                    fill
-                    className="object-cover object-top brightness-90"
-                  />
-                </div>
-                <h3 className="font-script text-3xl sm:text-4xl text-[#fdfaf6] mb-1">
-                  {groomFull}
-                </h3>
-                <p className="font-serif-custom text-xs text-[#e6c88b] tracking-wider uppercase mb-1">
-                  — Mempelai Pria —
-                </p>
-                <p className="font-serif-custom text-xs text-neutral-300 max-w-xs leading-relaxed">
-                  Putra tercinta dari: <br />
-                  <strong className="text-white">Bapak Simon Sianipar</strong> &amp; <strong className="text-white">Ibu Silvia br. Pasaribu</strong>
-                </p>
-              </div>
-
-              {/* Decorative Divider */}
-              <div className="flex items-center justify-center gap-3 w-40 mx-auto">
-                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-[#e6c88b]/50" />
-                <span className="font-script text-2xl text-[#e6c88b]">&amp;</span>
-                <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-[#e6c88b]/50" />
-              </div>
-
-              {/* Bride Profile */}
-              <div className="flex flex-col items-center">
-                <div className="relative w-44 h-56 sm:w-48 sm:h-64 rounded-full overflow-hidden border-2 border-[#e6c88b]/40 shadow-2xl mb-4">
-                  <Image
-                    src={project?.bride_photo_url || galleryPhotos[2]}
-                    alt="Andrea Stefani"
-                    fill
-                    className="object-cover object-top brightness-90"
-                  />
-                </div>
-                <h3 className="font-script text-3xl sm:text-4xl text-[#fdfaf6] mb-1">
-                  {brideFull}
-                </h3>
-                <p className="font-serif-custom text-xs text-[#e6c88b] tracking-wider uppercase mb-1">
-                  — Mempelai Wanita —
-                </p>
-                <p className="font-serif-custom text-xs text-neutral-300 max-w-xs leading-relaxed">
-                  Putri tercinta dari: <br />
-                  <strong className="text-white">Bapak Samuel Stefani</strong> &amp; <strong className="text-white">Ibu Ruth br. Hutabarat</strong>
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* ===================================================================== */}
-          {/* SECTION 4: OUR LOVE STORY                                             */}
-          {/* ===================================================================== */}
-          <section className="relative w-full py-16 px-6 sm:px-8 flex flex-col items-center text-center border-b border-[#e6c88b]/15 bg-[#1f060d]">
-            <span className="text-[10px] sm:text-xs uppercase tracking-[0.35em] text-[#e6c88b] font-serif-custom mb-2">
-              Kisah Cinta Kami
-            </span>
-            <h2 className="font-script text-4xl sm:text-5xl text-[#f5e4bc] mb-6">
-              Our Love Story
-            </h2>
-
-            <div className="relative w-full max-w-sm sm:max-w-md p-6 sm:p-8 rounded-2xl bg-[#330b17]/90 border border-[#e6c88b]/20 shadow-xl">
-              <p className="font-serif-custom text-xs sm:text-sm text-neutral-200 leading-relaxed mb-6 text-justify">
-                Berawal dari perkenalan sederhana di sebuah tempat kopi pada tahun 2020, takdir perlahan menuntun langkah kami untuk saling mengenal lebih dekat. Lewat tawa, beda pendapat, dan dukungan yang tak pernah surut di setiap musim kehidupan, kami yakin untuk melangkah bersama dan merajut masa depan dalam ikatan suci pernikahan.
-              </p>
-
-              <div className="space-y-4 text-left border-l-2 border-[#e6c88b]/30 pl-4 my-4">
-                <div>
-                  <span className="text-xs font-bold text-[#e6c88b] font-serif-custom">2020 • Pertemuan Pertama</span>
-                  <p className="text-[11px] text-neutral-300 font-serif-custom">Pertama kali menyapa dalam hangatnya aroma kopi di Bandung.</p>
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-[#e6c88b] font-serif-custom">2022 • Mengikat Komitmen</span>
-                  <p className="text-[11px] text-neutral-300 font-serif-custom">Memutuskan untuk saling mendampingi dan bertumbuh bersama.</p>
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-[#e6c88b] font-serif-custom">2025 • Lamaran Resmi</span>
-                  <p className="text-[11px] text-neutral-300 font-serif-custom">Dua keluarga besar bersatu dalam sukacita pertunangan.</p>
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-[#e6c88b] font-serif-custom">2026 • Ikatan Suci Pernikahan</span>
-                  <p className="text-[11px] text-neutral-300 font-serif-custom">Memulai babak baru kehidupan dalam berkat Tuhan Yang Maha Kuasa.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* ===================================================================== */}
-          {/* SECTION 5: COUNTDOWN TIMER                                            */}
-          {/* ===================================================================== */}
-          <section className="relative w-full py-16 px-6 sm:px-8 flex flex-col items-center text-center border-b border-[#e6c88b]/15">
-            <span className="text-[10px] sm:text-xs uppercase tracking-[0.35em] text-[#e6c88b] font-serif-custom mb-2">
-              Menghitung Hari
-            </span>
-            <h2 className="font-script text-4xl sm:text-5xl text-[#f5e4bc] mb-6">
-              Make Our Day Special
-            </h2>
-
-            <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-xs sm:max-w-sm w-full mb-6">
-              {[
-                { label: 'Hari', value: timeLeft.days },
-                { label: 'Jam', value: timeLeft.hours },
-                { label: 'Menit', value: timeLeft.minutes },
-                { label: 'Detik', value: timeLeft.seconds },
-              ].map((item, idx) => (
-                <div key={idx} className="bg-[#380e1b] border border-[#e6c88b]/30 rounded-xl p-3 sm:p-4 shadow-lg flex flex-col items-center">
-                  <span className="text-2xl sm:text-3xl font-serif-custom font-bold text-[#f5e4bc]">
-                    {String(item.value).padStart(2, '0')}
-                  </span>
-                  <span className="text-[9px] uppercase tracking-wider text-[#e6c88b]/80 font-serif-custom mt-1">
-                    {item.label}
-                  </span>
-                </div>
-              ))}
+            {/* Three Color Swatches */}
+            <div className="flex items-center justify-center space-x-4 mb-3">
+              <div className="w-10 h-10 rounded-full bg-[#c9919d] shadow-lg border-2 border-white/40" />
+              <div className="w-10 h-10 rounded-full bg-[#8a6771] shadow-lg border-2 border-white/40" />
+              <div className="w-10 h-10 rounded-full bg-[#c79f94] shadow-lg border-2 border-white/40" />
             </div>
 
-            <a
-              href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Wedding+of+Andrea+%26+Daniel&dates=20260621T010000Z/20260621T060000Z&details=Pernikahan+Andrea+dan+Daniel&location=Gereja+HKBP+Bandung+Barat"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1e060e] border border-[#e6c88b]/40 text-xs font-serif-custom font-semibold text-[#f5e4bc] hover:bg-[#380e1b] transition-colors shadow-md"
-            >
-              <svg className="w-4 h-4 text-[#e6c88b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span>Simpan ke Google Calendar</span>
-            </a>
-          </section>
-
-          {/* ===================================================================== */}
-          {/* SECTION 6: EVENT DETAILS (AKAD & RESEPSI)                             */}
-          {/* ===================================================================== */}
-          <section className="relative w-full py-16 px-6 sm:px-8 flex flex-col items-center text-center border-b border-[#e6c88b]/15 bg-[#1e060d]">
-            {/* Lace Banner */}
-            <div className="w-44 mb-3 opacity-90">
-              <img src={LACE_ASSETS.eventBanner11} alt="Event Lace Header" className="w-full h-auto object-contain" />
-            </div>
-
-            <span className="text-[10px] sm:text-xs uppercase tracking-[0.35em] text-[#e6c88b] font-serif-custom mb-2">
-              Rangkaian Acara
-            </span>
-            <h2 className="font-script text-4xl sm:text-5xl text-[#f5e4bc] mb-10">
-              The Detail
-            </h2>
-
-            <div className="w-full max-w-sm sm:max-w-md space-y-8">
-              {/* Card 1: Pemberkatan / Akad */}
-              <div className="relative p-6 sm:p-8 rounded-2xl bg-[#330b17] border border-[#e6c88b]/25 shadow-xl flex flex-col items-center">
-                <span className="px-3 py-1 rounded-full bg-[#5c182d] text-[#e6c88b] text-[10px] font-bold uppercase tracking-widest font-serif-custom mb-3">
-                  Pemberkatan Kudus
-                </span>
-                <h3 className="font-serif-custom font-bold text-xl text-[#fdfaf6] mb-2">
-                  Minggu, 21 Juni 2026
-                </h3>
-                <p className="text-xs text-[#e6c88b] font-serif-custom font-medium mb-3">
-                  Pukul 08.00 - 10.00 WIB
-                </p>
-                <div className="h-[1px] w-16 bg-[#e6c88b]/30 my-2" />
-                <p className="text-xs font-serif-custom text-neutral-200 font-bold">
-                  Gereja HKBP Bandung Barat
-                </p>
-                <p className="text-[11px] font-serif-custom text-neutral-400 mt-1">
-                  Jl. Surya Sumantri No. 45, Sukawarna, Sukajadi, Kota Bandung
-                </p>
-              </div>
-
-              {/* Card 2: Resepsi */}
-              <div className="relative p-6 sm:p-8 rounded-2xl bg-[#330b17] border border-[#e6c88b]/25 shadow-xl flex flex-col items-center">
-                <span className="px-3 py-1 rounded-full bg-[#5c182d] text-[#e6c88b] text-[10px] font-bold uppercase tracking-widest font-serif-custom mb-3">
-                  Resepsi Pernikahan
-                </span>
-                <h3 className="font-serif-custom font-bold text-xl text-[#fdfaf6] mb-2">
-                  Minggu, 21 Juni 2026
-                </h3>
-                <p className="text-xs text-[#e6c88b] font-serif-custom font-medium mb-3">
-                  Pukul 11.00 WIB - Selesai
-                </p>
-                <div className="h-[1px] w-16 bg-[#e6c88b]/30 my-2" />
-                <p className="text-xs font-serif-custom text-neutral-200 font-bold">
-                  Manten Ballroom Bandung
-                </p>
-                <p className="text-[11px] font-serif-custom text-neutral-400 mt-1">
-                  Jl. Dr. Setiabudi No. 130, Gegerkalong, Kota Bandung
-                </p>
-              </div>
-
-              {/* Google Maps Button */}
-              <a
-                href="https://maps.google.com/?q=Gereja+HKBP+Bandung"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-gradient-to-r from-[#801431] to-[#9e1c3e] hover:brightness-110 text-white font-serif-custom text-xs font-bold uppercase tracking-widest shadow-lg border border-[#e6c88b]/40 transition-all cursor-pointer"
-              >
-                <svg className="w-4 h-4 text-[#e6c88b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span>Petunjuk Arah Google Maps</span>
-              </a>
-            </div>
-          </section>
-
-          {/* ===================================================================== */}
-          {/* SECTION 7: DRESS CODE                                                 */}
-          {/* ===================================================================== */}
-          <section className="relative w-full py-16 px-6 sm:px-8 flex flex-col items-center text-center border-b border-[#e6c88b]/15">
-            <span className="text-[10px] sm:text-xs uppercase tracking-[0.35em] text-[#e6c88b] font-serif-custom mb-2">
-              Panduan Busana
-            </span>
-            <h2 className="font-script text-4xl sm:text-5xl text-[#f5e4bc] mb-6">
-              Dress Code: Nude Formal
-            </h2>
-
-            <div className="relative w-full max-w-sm p-6 rounded-2xl bg-[#330b17]/80 border border-[#e6c88b]/20 shadow-xl flex flex-col items-center">
-              {/* Palette Color Circles */}
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="flex flex-col items-center gap-1">
-                  <div className="w-10 h-10 rounded-full bg-[#f4ebe1] border-2 border-white/40 shadow-md" />
-                  <span className="text-[9px] text-neutral-300 font-serif-custom">Champagne</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <div className="w-10 h-10 rounded-full bg-[#d8bfa6] border-2 border-white/40 shadow-md" />
-                  <span className="text-[9px] text-neutral-300 font-serif-custom">Soft Nude</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <div className="w-10 h-10 rounded-full bg-[#b59379] border-2 border-white/40 shadow-md" />
-                  <span className="text-[9px] text-neutral-300 font-serif-custom">Mocha</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <div className="w-10 h-10 rounded-full bg-[#5c182d] border-2 border-[#e6c88b]/60 shadow-md" />
-                  <span className="text-[9px] text-neutral-300 font-serif-custom">Burgundy</span>
-                </div>
-              </div>
-
-              <p className="font-serif-custom text-xs text-neutral-300 leading-relaxed">
-                Kami sangat mengapresiasi apabila para tamu mengenakan pakaian bernuansa formal dengan palet warna Nude atau Burgundy untuk keserasian momen istimewa kami.
-              </p>
-            </div>
-          </section>
-
-          {/* ===================================================================== */}
-          {/* SECTION 8: ATTENDANCE & RSVP                                          */}
-          {/* ===================================================================== */}
-          <section className="relative w-full py-16 px-6 sm:px-8 flex flex-col items-center text-center border-b border-[#e6c88b]/15 bg-[#1d050c]">
-            <span className="text-[10px] sm:text-xs uppercase tracking-[0.35em] text-[#e6c88b] font-serif-custom mb-2">
-              Konfirmasi Kehadiran
-            </span>
-            <h2 className="font-script text-4xl sm:text-5xl text-[#f5e4bc] mb-6">
-              RSVP &amp; Doa Restu
-            </h2>
-
-            <div className="w-full max-w-sm sm:max-w-md p-6 sm:p-8 rounded-2xl bg-[#330b17] border border-[#e6c88b]/25 shadow-xl text-left">
-              {rsvpSuccess ? (
-                <div className="text-center py-6 space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-900/50 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto text-2xl">
-                    ✓
-                  </div>
-                  <h3 className="font-serif-custom font-bold text-lg text-white">
-                    Terima Kasih Atas Konfirmasinya!
-                  </h3>
-                  <p className="font-serif-custom text-xs text-neutral-300">
-                    Konfirmasi dan ucapan Anda telah tersimpan dengan aman di buku tamu kami.
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleRsvpSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-serif-custom text-[#e6c88b] mb-1 font-semibold">
-                      Nama Lengkap Tamu
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={rsvpName}
-                      onChange={(e) => setRsvpName(e.target.value)}
-                      placeholder="Masukkan nama Anda"
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#1e060e] border border-[#e6c88b]/30 text-white text-xs font-serif-custom focus:outline-none focus:border-[#e6c88b]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-serif-custom text-[#e6c88b] mb-1 font-semibold">
-                      Nomor WhatsApp / HP
-                    </label>
-                    <input
-                      type="tel"
-                      value={rsvpPhone}
-                      onChange={(e) => setRsvpPhone(e.target.value)}
-                      placeholder="08123456789"
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#1e060e] border border-[#e6c88b]/30 text-white text-xs font-serif-custom focus:outline-none focus:border-[#e6c88b]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-serif-custom text-[#e6c88b] mb-1 font-semibold">
-                      Konfirmasi Kehadiran
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setRsvpStatus('attending')}
-                        className={`py-2 px-3 rounded-xl border text-xs font-serif-custom font-semibold transition-all cursor-pointer ${
-                          rsvpStatus === 'attending'
-                            ? 'bg-[#5c182d] border-[#e6c88b] text-white'
-                            : 'bg-[#1e060e] border-white/10 text-neutral-400 hover:border-white/30'
-                        }`}
-                      >
-                        ✓ Hadir
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRsvpStatus('not_attending')}
-                        className={`py-2 px-3 rounded-xl border text-xs font-serif-custom font-semibold transition-all cursor-pointer ${
-                          rsvpStatus === 'not_attending'
-                            ? 'bg-[#5c182d] border-[#e6c88b] text-white'
-                            : 'bg-[#1e060e] border-white/10 text-neutral-400 hover:border-white/30'
-                        }`}
-                      >
-                        ✕ Berhalangan
-                      </button>
-                    </div>
-                  </div>
-
-                  {rsvpStatus === 'attending' && (
-                    <div>
-                      <label className="block text-xs font-serif-custom text-[#e6c88b] mb-1 font-semibold">
-                        Jumlah Tamu yang Hadir
-                      </label>
-                      <select
-                        value={rsvpGuestsCount}
-                        onChange={(e) => setRsvpGuestsCount(Number(e.target.value))}
-                        className="w-full px-4 py-2.5 rounded-xl bg-[#1e060e] border border-[#e6c88b]/30 text-white text-xs font-serif-custom focus:outline-none focus:border-[#e6c88b]"
-                      >
-                        <option value={1}>1 Orang</option>
-                        <option value={2}>2 Orang</option>
-                        <option value={3}>3 Orang</option>
-                        <option value={4}>4 Orang</option>
-                      </select>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-xs font-serif-custom text-[#e6c88b] mb-1 font-semibold">
-                      Pesan &amp; Doa Restu
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={rsvpMessage}
-                      onChange={(e) => setRsvpMessage(e.target.value)}
-                      placeholder="Tuliskan ucapan dan doa terbaik Anda..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#1e060e] border border-[#e6c88b]/30 text-white text-xs font-serif-custom focus:outline-none focus:border-[#e6c88b]"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isSubmittingRsvp}
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-[#801431] to-[#9e1c3e] hover:brightness-110 text-white font-serif-custom text-xs font-bold uppercase tracking-widest shadow-lg border border-[#e6c88b]/40 transition-all cursor-pointer"
-                  >
-                    {isSubmittingRsvp ? 'Mengirim...' : 'Kirim Konfirmasi'}
-                  </button>
-                </form>
-              )}
-
-              {/* Guest Wishes List */}
-              {wishesList.length > 0 && (
-                <div className="mt-8 pt-6 border-t border-[#e6c88b]/20">
-                  <h4 className="text-xs font-serif-custom font-bold uppercase tracking-wider text-[#e6c88b] mb-4">
-                    Ucapan &amp; Doa ({wishesList.length})
-                  </h4>
-                  <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                    {wishesList.map((w, idx) => (
-                      <div key={idx} className="p-3 rounded-xl bg-[#1e060e]/80 border border-white/5">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-serif-custom font-bold text-xs text-[#f5e4bc]">
-                            {w.guest_name || 'Tamu'}
-                          </span>
-                          <span className={`text-[9px] px-2 py-0.5 rounded-full ${
-                            w.status === 'attending' ? 'bg-emerald-950 text-emerald-400' : 'bg-rose-950 text-rose-400'
-                          }`}>
-                            {w.status === 'attending' ? 'Hadir' : 'Berhalangan'}
-                          </span>
-                        </div>
-                        <p className="text-xs text-neutral-300 font-serif-custom italic">
-                          &ldquo;{w.message}&rdquo;
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* ===================================================================== */}
-          {/* SECTION 9: WEDDING GIFT / TANDA KASIH                                 */}
-          {/* ===================================================================== */}
-          <section className="relative w-full py-16 px-6 sm:px-8 flex flex-col items-center text-center border-b border-[#e6c88b]/15">
-            <span className="text-[10px] sm:text-xs uppercase tracking-[0.35em] text-[#e6c88b] font-serif-custom mb-2">
-              Tanda Kasih
-            </span>
-            <h2 className="font-script text-4xl sm:text-5xl text-[#f5e4bc] mb-6">
-              Wedding Gift
-            </h2>
-
-            <p className="font-serif-custom text-xs text-neutral-300 max-w-sm mb-8 leading-relaxed">
-              Doa restu Anda merupakan karunia yang sangat berarti bagi kami. Namun apabila Anda berkenan memberikan tanda kasih, dapat melalui nomor rekening berikut:
+            <p className="font-serif-custom text-base text-white tracking-widest uppercase">
+              Nude Formal
             </p>
 
-            <div className="w-full max-w-sm space-y-4">
-              {/* Account 1 */}
-              <div className="p-6 rounded-2xl bg-[#330b17] border border-[#e6c88b]/25 shadow-xl flex flex-col items-center">
-                <span className="text-xs font-serif-custom uppercase tracking-widest text-[#e6c88b] font-bold mb-1">
-                  Bank BCA
-                </span>
-                <span className="text-xl sm:text-2xl font-mono font-bold text-white tracking-widest mb-1">
-                  7776510
-                </span>
-                <span className="text-xs font-serif-custom text-neutral-300 mb-4">
-                  a.n. Andreas Stefani
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleCopy('7776510', 'bca-andreas')}
-                  className="px-5 py-2 rounded-full bg-[#1e060e] hover:bg-[#5c182d] border border-[#e6c88b]/40 text-xs font-serif-custom font-semibold text-[#f5e4bc] transition-colors flex items-center gap-2 cursor-pointer"
-                >
-                  {copiedAccount === 'bca-andreas' ? (
-                    <>
-                      <span className="text-emerald-400">✓</span>
-                      <span>Tersalin ke Clipboard!</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5 text-[#e6c88b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      <span>Salin No. Rekening</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Account 2 */}
-              <div className="p-6 rounded-2xl bg-[#330b17] border border-[#e6c88b]/25 shadow-xl flex flex-col items-center">
-                <span className="text-xs font-serif-custom uppercase tracking-widest text-[#e6c88b] font-bold mb-1">
-                  Bank BCA
-                </span>
-                <span className="text-xl sm:text-2xl font-mono font-bold text-white tracking-widest mb-1">
-                  7775419
-                </span>
-                <span className="text-xs font-serif-custom text-neutral-300 mb-4">
-                  a.n. Daniel Sianipar
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleCopy('7775419', 'bca-daniel')}
-                  className="px-5 py-2 rounded-full bg-[#1e060e] hover:bg-[#5c182d] border border-[#e6c88b]/40 text-xs font-serif-custom font-semibold text-[#f5e4bc] transition-colors flex items-center gap-2 cursor-pointer"
-                >
-                  {copiedAccount === 'bca-daniel' ? (
-                    <>
-                      <span className="text-emerald-400">✓</span>
-                      <span>Tersalin ke Clipboard!</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5 text-[#e6c88b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      <span>Salin No. Rekening</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+            <div className="lace-pattern-bottom" />
           </section>
 
-          {/* ===================================================================== */}
-          {/* SECTION 10: PHOTO GALLERY                                             */}
-          {/* ===================================================================== */}
-          <section className="relative w-full py-16 px-6 sm:px-8 flex flex-col items-center text-center border-b border-[#e6c88b]/15 bg-[#1d050c]">
-            <span className="text-[10px] sm:text-xs uppercase tracking-[0.35em] text-[#e6c88b] font-serif-custom mb-2">
-              Galeri Momen
-            </span>
-            <h2 className="font-script text-4xl sm:text-5xl text-[#f5e4bc] mb-8">
-              Prewedding Gallery
-            </h2>
+          {/* ----------------------------------------------------------------------- */}
+          {/* PAGE 8: ATTENDANCE CONFIRMATION & BLESSINGS FORM                        */}
+          {/* ----------------------------------------------------------------------- */}
+          <section
+            className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12"
+            style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
+          >
+            <div className="lace-pattern-top" />
 
-            <div className="grid grid-cols-2 gap-3 max-w-sm sm:max-w-md w-full">
-              {galleryPhotos.map((photo: string, i: number) => (
-                <div
-                  key={i}
-                  onClick={() => setActivePhoto(photo)}
-                  className="relative aspect-[3/4] rounded-xl overflow-hidden border border-[#e6c88b]/20 shadow-md cursor-pointer group"
-                >
-                  <Image
-                    src={photo}
-                    alt={`Prewedding ${i + 1}`}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+            <h2 className="font-abigail text-4xl sm:text-5xl text-white mb-3">Attendance</h2>
+
+            {/* Cream Floral Envelope Graphic with Couple Photo */}
+            <div className="relative w-52 sm:w-60 aspect-[2496/2623] filter drop-shadow-2xl mb-4">
+              <img
+                src={LACE_ASSETS.daffodilEnvelopeHal8}
+                alt="Envelope with Daffodils"
+                className="w-full h-full object-contain relative z-20 pointer-events-none"
+              />
+              {/* Inserted Oval Lace Frame & Photo */}
+              <div className="absolute top-[16%] left-[24%] w-[52%] aspect-[1676/2378] z-10">
+                <img
+                  src={LACE_ASSETS.ovalLaceFrameHal8}
+                  alt="Oval Lace"
+                  className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
+                />
+                <div className="absolute inset-[15%] rounded-full overflow-hidden z-10">
+                  <img src="/photos/our-story-oval.jpg" alt="Couple" className="w-full h-full object-cover" />
                 </div>
-              ))}
+              </div>
             </div>
-          </section>
 
-          {/* Lightbox Modal */}
-          {activePhoto && (
-            <div
-              className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
-              onClick={() => setActivePhoto(null)}
-            >
-              <div className="relative max-w-lg max-h-[85vh] w-full h-full flex items-center justify-center">
-                <Image
-                  src={activePhoto}
-                  alt="Enlarged photo"
-                  fill
-                  className="object-contain"
+            {/* Attendance Form */}
+            <form onSubmit={handleRsvpSubmit} className="w-full max-w-xs space-y-2.5 text-left">
+              <div>
+                <label className="font-britannic text-[11px] uppercase text-neutral-300 ml-3">Guest Identity</label>
+                <input
+                  type="text"
+                  value={rsvpName}
+                  onChange={(e) => setRsvpName(e.target.value)}
+                  placeholder="Guest Name"
+                  className="w-full h-10 px-4 rounded-full bg-[#350711]/85 border border-[#ffffff]/30 text-white placeholder-neutral-400 font-britannic text-xs focus:outline-none focus:border-[#e6c88b]"
                 />
               </div>
-            </div>
-          )}
 
-          {/* ===================================================================== */}
-          {/* SECTION 11: CLOSING / THANK YOU                                       */}
-          {/* ===================================================================== */}
-          <section className="relative w-full py-20 px-6 sm:px-8 flex flex-col items-center text-center">
-            {/* Lace Medallion Top */}
-            <div className="w-20 mb-4 opacity-80">
-              <img src={LACE_ASSETS.heroLaceMedallion} alt="Lace medallion" className="w-full h-auto object-contain" />
-            </div>
+              <div>
+                <label className="font-britannic text-[11px] uppercase text-neutral-300 ml-3">Email Adress</label>
+                <input
+                  type="email"
+                  value={rsvpEmail}
+                  onChange={(e) => setRsvpEmail(e.target.value)}
+                  placeholder="email@domain.com"
+                  className="w-full h-10 px-4 rounded-full bg-[#350711]/85 border border-[#ffffff]/30 text-white placeholder-neutral-400 font-britannic text-xs focus:outline-none focus:border-[#e6c88b]"
+                />
+              </div>
 
-            <p className="font-serif-custom text-xs sm:text-sm text-neutral-200 max-w-sm leading-relaxed mb-6">
-              Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu kepada kami.
-            </p>
+              <div>
+                <label className="font-britannic text-[11px] uppercase text-neutral-300 ml-3">Whatsapp Number</label>
+                <input
+                  type="tel"
+                  value={rsvpPhone}
+                  onChange={(e) => setRsvpPhone(e.target.value)}
+                  placeholder="08xxxxxxxxxx"
+                  className="w-full h-10 px-4 rounded-full bg-[#350711]/85 border border-[#ffffff]/30 text-white placeholder-neutral-400 font-britannic text-xs focus:outline-none focus:border-[#e6c88b]"
+                />
+              </div>
 
-            <p className="font-serif-custom text-xs text-[#e6c88b] uppercase tracking-widest mb-4">
-              Kami yang berbahagia,
-            </p>
+              <div>
+                <label className="font-britannic text-[11px] uppercase text-neutral-300 ml-3">Confirmation</label>
+                <div className="flex space-x-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setRsvpStatus('attending')}
+                    className={`flex-1 py-2 px-2 rounded-full font-britannic text-[11px] tracking-wide transition-all ${
+                      rsvpStatus === 'attending'
+                        ? 'bg-[#e6c88b] text-[#3c0915] font-bold shadow-md'
+                        : 'bg-[#350711]/85 border border-white/20 text-neutral-300'
+                    }`}
+                  >
+                    Absolutely, wouldn&quot;t miss it!
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRsvpStatus('not_attending')}
+                    className={`flex-1 py-2 px-2 rounded-full font-britannic text-[11px] tracking-wide transition-all ${
+                      rsvpStatus === 'not_attending'
+                        ? 'bg-[#e6c88b] text-[#3c0915] font-bold shadow-md'
+                        : 'bg-[#350711]/85 border border-white/20 text-neutral-300'
+                    }`}
+                  >
+                    Sadly, cannot make it
+                  </button>
+                </div>
+              </div>
 
-            <h2 className="font-script text-5xl sm:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-[#fdfaf6] via-[#f5e4bc] to-[#e6c88b] leading-tight mb-6">
-              {brideName} &amp; {groomName}
-            </h2>
+              <div>
+                <label className="font-britannic text-[11px] uppercase text-neutral-300 ml-3">Total Person</label>
+                <select
+                  value={rsvpGuestsCount}
+                  onChange={(e) => setRsvpGuestsCount(Number(e.target.value))}
+                  className="w-full h-10 px-4 rounded-full bg-[#350711]/85 border border-[#ffffff]/30 text-white font-britannic text-xs focus:outline-none focus:border-[#e6c88b]"
+                >
+                  <option value={1} className="bg-[#22050c]">1 orang</option>
+                  <option value={2} className="bg-[#22050c]">2 orang</option>
+                  <option value={3} className="bg-[#22050c]">3 orang</option>
+                  <option value={4} className="bg-[#22050c]">4 orang</option>
+                </select>
+              </div>
 
-            {/* Lace Bottom Border */}
-            <div className="w-40 mb-8 opacity-70">
-              <img src={LACE_ASSETS.closingBorder21} alt="Lace Border" className="w-full h-auto object-contain" />
-            </div>
+              <div>
+                <label className="font-britannic text-[11px] uppercase text-neutral-300 ml-3">Doa &amp; Ucapan</label>
+                <textarea
+                  value={rsvpMessage}
+                  onChange={(e) => setRsvpMessage(e.target.value)}
+                  rows={2}
+                  placeholder="Tulis ucapan dan doa untuk kedua mempelai..."
+                  className="w-full px-4 py-2 rounded-2xl bg-[#350711]/85 border border-[#ffffff]/30 text-white placeholder-neutral-400 font-britannic text-xs focus:outline-none focus:border-[#e6c88b] resize-none"
+                />
+              </div>
 
-            <p className="text-[10px] uppercase tracking-[0.25em] text-neutral-500 font-serif-custom">
-              Created with love by SeraStory
-            </p>
+              {/* CONFIRM PRESENCE Button using authentic graphic */}
+              <div className="pt-2 flex justify-center">
+                <button
+                  type="submit"
+                  disabled={isSubmittingRsvp}
+                  className="relative w-56 hover:scale-105 active:scale-95 transition-transform"
+                >
+                  <img
+                    src={LACE_ASSETS.confirmPresenceBtn}
+                    alt="CONFIRM PRESENCE"
+                    className="w-full h-auto object-contain filter drop-shadow-lg"
+                  />
+                </button>
+              </div>
+            </form>
+
+            <div className="lace-pattern-bottom" />
           </section>
-        </main>
+
+          {/* ----------------------------------------------------------------------- */}
+          {/* PAGE 9: WEDDING GIFT (TWO HEART DOILIES WITH COPY BUTTONS)              */}
+          {/* ----------------------------------------------------------------------- */}
+          <section
+            className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12"
+            style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
+          >
+            <div className="lace-pattern-top" />
+
+            <h2 className="font-abigail text-4xl sm:text-5xl text-white mb-2">Wedding Gift</h2>
+
+            <p className="font-britannic text-xs sm:text-sm text-neutral-200 leading-relaxed max-w-sm mb-6 px-4">
+              Your presence is the greatest gift of all. However, if you areunable to attend and would like to send us your wishes in the form of a gift, please use the account details below:
+            </p>
+
+            {/* Bank Card 1: Andreas Stefani */}
+            <div className="relative w-64 sm:w-72 aspect-[3274/2743] filter drop-shadow-2xl mb-4">
+              <img
+                src={LACE_ASSETS.heartDoilyHal9}
+                alt="Heart Lace Doily"
+                className="w-full h-full object-contain pointer-events-none"
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-[#3c0915] pt-2">
+                <span className="font-britannic text-sm sm:text-base font-bold">BCA</span>
+                <span className="font-britannic text-xs sm:text-sm">Andreas Stefani</span>
+                <span className="font-britannic text-lg sm:text-xl font-bold tracking-wider my-0.5">7776510</span>
+                <button
+                  onClick={() => handleCopyText('7776510', 'Rekening BCA Andreas')}
+                  className="px-4 py-0.5 mt-1 rounded-full bg-[#3c0915] text-[#fdfaf7] font-britannic text-[11px] font-bold uppercase tracking-wider hover:bg-[#5c182d] active:scale-95 transition"
+                >
+                  copy
+                </button>
+              </div>
+            </div>
+
+            {/* Bank Card 2: Daniel Sianipar */}
+            <div className="relative w-64 sm:w-72 aspect-[3274/2743] filter drop-shadow-2xl mb-4">
+              <img
+                src={LACE_ASSETS.heartDoilyHal9}
+                alt="Heart Lace Doily"
+                className="w-full h-full object-contain pointer-events-none"
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-[#3c0915] pt-2">
+                <span className="font-britannic text-sm sm:text-base font-bold">BCA</span>
+                <span className="font-britannic text-xs sm:text-sm">Daniel Sianipar</span>
+                <span className="font-britannic text-lg sm:text-xl font-bold tracking-wider my-0.5">7775419</span>
+                <button
+                  onClick={() => handleCopyText('7775419', 'Rekening BCA Daniel')}
+                  className="px-4 py-0.5 mt-1 rounded-full bg-[#3c0915] text-[#fdfaf7] font-britannic text-[11px] font-bold uppercase tracking-wider hover:bg-[#5c182d] active:scale-95 transition"
+                >
+                  copy
+                </button>
+              </div>
+            </div>
+
+            {/* Footnote */}
+            <div className="text-[10px] text-neutral-300 font-britannic max-w-xs text-left space-y-0.5 mt-2 px-4">
+              <p className="font-bold">*Note:</p>
+              <p>Before making Transfer/Shipment, please note:</p>
+              <p>- Bank Name, Recipient Name are already in accordance with the couple&apos;s names</p>
+              <p>- Confirm the gift shipment via personal chat to the couple</p>
+            </div>
+
+            <div className="lace-pattern-bottom" />
+          </section>
+
+          {/* ----------------------------------------------------------------------- */}
+          {/* PAGE 10: GALLERY (5 GOLD ORNATE FRAMES) & WISHES WALL                  */}
+          {/* ----------------------------------------------------------------------- */}
+          <section
+            className="relative w-full flex flex-col items-center justify-start p-6 bg-cover bg-top text-center overflow-hidden py-16"
+            style={{ backgroundImage: `url(${LACE_ASSETS.bgTallGallery})` }}
+          >
+            <div className="lace-pattern-top" />
+
+            <h2 className="font-abigail text-4xl sm:text-5xl text-white mb-8">Our Moments</h2>
+
+            {/* 5 Stacked Ornate Gold Frames */}
+            <div className="w-full max-w-xs sm:max-w-sm space-y-6">
+              {galleryItems.map((item, index) => (
+                <div
+                  key={index}
+                  onClick={() => setActivePhoto(item.src)}
+                  className="relative w-full aspect-[2935/2515] filter drop-shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform"
+                >
+                  {/* Ornate Gold Frame Border */}
+                  <img
+                    src={LACE_ASSETS.goldRectFrameHal10}
+                    alt="Gold Frame"
+                    className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
+                  />
+                  {/* Prewedding Photo inside Frame */}
+                  <div className="absolute inset-[15%] overflow-hidden z-10 bg-neutral-900">
+                    <img
+                      src={item.src}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Wishes & Prayers Wall */}
+            <div className="w-full max-w-sm mt-12 text-left">
+              <h3 className="font-abigail text-3xl sm:text-4xl text-white text-center mb-4">
+                Doa &amp; Ucapan
+              </h3>
+              <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                {wishesList.length > 0 ? (
+                  wishesList.map((wish: any, idx: number) => (
+                    <div
+                      key={wish.id || idx}
+                      className="p-4 rounded-2xl bg-[#350711]/90 border border-[#e6c88b]/40 backdrop-blur-sm shadow-md"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-britannic text-xs font-bold text-[#fdfaf7]">{wish.name}</span>
+                        <span className="font-serif-custom text-[9px] text-[#e6c88b]">
+                          {wish.created_at ? new Date(wish.created_at).toLocaleDateString('id-ID') : 'Hari ini'}
+                        </span>
+                      </div>
+                      <p className="font-britannic text-xs text-neutral-200 leading-relaxed">
+                        {wish.notes || wish.message}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center font-britannic text-xs text-neutral-300 italic">
+                    Belum ada ucapan. Jadilah yang pertama memberikan doa restu!
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Closing & Footer */}
+            <div className="mt-14 mb-6 flex flex-col items-center text-center">
+              <h3 className="font-abigail text-4xl sm:text-5xl text-white mb-1">Thank You</h3>
+              <p className="font-britannic text-xs text-neutral-200 uppercase tracking-widest mb-4">
+                Andrea &amp; Daniel
+              </p>
+              <div className="w-20 h-[1px] bg-[#e6c88b]/40 mb-3" />
+              <p className="font-serif-custom text-[10px] text-[#e6c88b] tracking-wider uppercase">
+                Sera Story - Digital Wedding Invitation
+              </p>
+            </div>
+
+            <div className="lace-pattern-bottom" />
+          </section>
+
+        </div>
+      )}
+
+      {/* Lightbox Modal for Gallery */}
+      {activePhoto && (
+        <div
+          onClick={() => setActivePhoto(null)}
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
+        >
+          <div className="relative max-w-lg w-full max-h-[85vh] aspect-square flex items-center justify-center">
+            <img
+              src={activePhoto}
+              alt="Zoomed Photo"
+              className="max-w-full max-h-full object-contain rounded-2xl border border-[#e6c88b]/50 shadow-2xl"
+            />
+            <button
+              onClick={() => setActivePhoto(null)}
+              className="absolute top-2 right-2 w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center font-bold text-lg"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
