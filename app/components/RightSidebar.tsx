@@ -448,13 +448,13 @@ export default function RightSidebar({
                   className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                 />
 
-                {/* Angled Mountain Envelope (Upper Center) */}
+                {/* Angled Mountain Envelope (Upper Center/Left) - Extends outside platter rim */}
                 <motion.div
-                  initial={{ opacity: 0, y: -25, rotate: -18 }}
-                  whileInView={{ opacity: 1, y: 0, rotate: -12 }}
+                  initial={{ opacity: 0, scale: 0.9, y: -20 }}
+                  whileInView={{ opacity: 1, scale: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.8, delay: 0.15 }}
-                  className="absolute top-[14%] left-[10%] w-[58%] z-10 filter drop-shadow-md"
+                  transition={{ duration: 0.85, delay: 0.15 }}
+                  className="absolute top-[0%] left-[-9%] w-[70%] z-10 rotate-[11deg] filter drop-shadow-xl"
                 >
                   <img
                     src={LACE_ASSETS.mountainCardHal1}
@@ -463,13 +463,13 @@ export default function RightSidebar({
                   />
                 </motion.div>
 
-                {/* Heart Silver Locket (Upper Right) with Couple Photos */}
+                {/* Heart Silver Locket (Upper Right) with Couple Photos - Overlaps doily and sticks out right rim */}
                 <motion.div
-                  initial={{ opacity: 0, y: -20, scale: 0.92 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  initial={{ opacity: 0, scale: 0.9, x: 20 }}
+                  whileInView={{ opacity: 1, scale: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.85, delay: 0.3 }}
-                  className="absolute top-[28%] right-[4%] w-[52%] z-20 filter drop-shadow-lg"
+                  className="absolute top-[19%] right-[-7.5%] w-[62%] z-25 filter drop-shadow-xl"
                 >
                   <div className="relative w-full aspect-[3384/2028]">
                     <img
@@ -505,7 +505,7 @@ export default function RightSidebar({
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.8, delay: 0.45 }}
-                  className="absolute bottom-[24%] left-[12%] w-[76%] z-15 filter drop-shadow-md"
+                  className="absolute top-[27.5%] left-[9.5%] w-[81%] z-15 filter drop-shadow-md"
                 >
                   <div className="relative w-full">
                     <img
@@ -513,22 +513,22 @@ export default function RightSidebar({
                       alt="Heart Doily"
                       className="w-full h-auto object-contain"
                     />
-                    {/* Couple Names */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-[#3c0915] pointer-events-none pt-2">
-                      <h1 className="font-abigail text-3xl sm:text-4xl leading-tight">Andrea</h1>
-                      <span className="font-abigail text-xl sm:text-2xl leading-none">&amp;</span>
-                      <h1 className="font-abigail text-3xl sm:text-4xl leading-tight">Daniel</h1>
+                    {/* Couple Names - Flowing Cursive Script matching original mockup */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-[#7a1828] pointer-events-none pt-4 sm:pt-6">
+                      <h1 className="font-artisan text-4xl sm:text-5xl text-[#7a1828] leading-tight font-normal tracking-wide">Andrea</h1>
+                      <span className="font-artisan text-2xl sm:text-3xl text-[#7a1828] leading-none my-0.5">&amp;</span>
+                      <h1 className="font-artisan text-4xl sm:text-5xl text-[#7a1828] leading-tight font-normal tracking-wide">Daniel</h1>
                     </div>
                   </div>
                 </motion.div>
 
                 {/* Three White Roses Bouquet (Bottom Left) */}
                 <motion.div
-                  initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                  initial={{ opacity: 0, y: 25, scale: 0.9 }}
                   whileInView={{ opacity: 1, y: 0, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.8, delay: 0.55 }}
-                  className="absolute -bottom-[2%] left-[10%] w-[48%] z-30 filter drop-shadow-lg"
+                  className="absolute top-[72%] left-[4.8%] w-[54%] z-30 filter drop-shadow-xl"
                 >
                   <img
                     src={LACE_ASSETS.whiteRosesHal1}

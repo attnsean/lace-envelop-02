@@ -50,8 +50,8 @@
 
 @font-face {
   font-family: 'ArtisanScript';
-  src: url('/fonts/Artisan Script.ttf') format('truetype'),
-       url('/fonts/Artisan Script.otf') format('opentype');
+  src: url('/fonts/ArtisanScript.ttf') format('truetype'),
+       url('/fonts/ArtisanScript.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
