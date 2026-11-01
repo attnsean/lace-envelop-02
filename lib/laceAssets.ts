@@ -14,13 +14,20 @@ export const LACE_ASSETS = {
     `${LACE_CDN}/gallery/gallery-4.webp`,
     `${LACE_CDN}/gallery/gallery-5.webp`,
   ],
+
+  // High-Resolution Default Photos from R2 (Zero Screenshots)
+  bridePhoto: `${LACE_CDN}/bride-oval.jpg`,
+  groomPhoto: `${LACE_CDN}/groom-oval.jpg`,
+  ourStoryPhoto: `${LACE_CDN}/our-story-oval.jpg`,
+  locketLeft: `${LACE_CDN}/locket-left.jpg`,
+  locketRight: `${LACE_CDN}/locket-right.jpg`,
   
   // Cover (Click to open)
   coverComposite: `${LACE_CDN}/cover-01.png`,
   coverBg: `${LACE_CDN}/cover-01.png`,
   coverHeartDoily: `${LACE_CDN}/cover-02.png`,
   coverEnvelope: `${LACE_CDN}/cover-03.png`,
-  envelopeSeal: `${LACE_CDN}/cover-03.png`,
+  envelopeSeal: `${LACE_CDN}/wax-seal.png`,
   
   // Page 1: Hero / Save The Date
   silverTrayHal1: `${LACE_CDN}/aset-hal1-03.png`,

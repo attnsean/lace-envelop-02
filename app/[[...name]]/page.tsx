@@ -159,8 +159,8 @@ export default async function Home({ params, searchParams }: Props) {
 
         {/* Center Card / Typography Showcase */}
         <div className="relative z-10 text-center px-10 py-12 rounded-3xl bg-[#250711]/85 backdrop-blur-md border border-[#e6c88b]/40 shadow-2xl max-w-lg mx-6 flex flex-col items-center">
-          {/* Top Lace Medallion */}
-          <div className="w-20 h-20 mb-3 opacity-80 animate-shimmer-lace">
+          {/* Wax Seal Medallion */}
+          <div className="w-16 h-16 mb-4 filter drop-shadow-md">
             <img src={LACE_ASSETS.envelopeSeal} alt="Seal" className="w-full h-full object-contain" />
           </div>
 

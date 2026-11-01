@@ -196,6 +196,13 @@ export default function RightSidebar({
     title: `Our Moment ${index + 1}`,
   }));
 
+  // High-Resolution Authentic Photos from R2 (Zero Screenshots)
+  const brideImg = project?.bride_photo_url || LACE_ASSETS.bridePhoto;
+  const groomImg = project?.groom_photo_url || LACE_ASSETS.groomPhoto;
+  const storyImg = project?.opening_photo_url || project?.cover_photo_url || LACE_ASSETS.ourStoryPhoto;
+  const locketLeftImg = project?.cover_photo_url || LACE_ASSETS.locketLeft;
+  const locketRightImg = project?.opening_photo_url || LACE_ASSETS.locketRight;
+
   return (
     <div className="relative w-full md:w-[42%] lg:w-[38%] h-[100dvh] overflow-y-auto overflow-x-hidden bg-[#22050c] text-white select-none scroll-smooth">
       {/* Background Audio Element */}
@@ -341,11 +348,11 @@ export default function RightSidebar({
                   />
                   {/* Photo in Left Heart */}
                   <div className="absolute top-[18%] left-[11%] w-[38%] h-[68%] rounded-full overflow-hidden z-10">
-                    <img src="/photos/locket-left.jpg" alt="Couple" className="w-full h-full object-cover" />
+                    <img src={locketLeftImg} alt="Couple" className="w-full h-full object-cover" />
                   </div>
                   {/* Photo in Right Heart */}
                   <div className="absolute top-[26%] right-[10%] w-[38%] h-[68%] rounded-full overflow-hidden z-10">
-                    <img src="/photos/locket-right.jpg" alt="Couple" className="w-full h-full object-cover" />
+                    <img src={locketRightImg} alt="Couple" className="w-full h-full object-cover" />
                   </div>
                 </div>
               </div>
@@ -438,7 +445,7 @@ export default function RightSidebar({
                   className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
                 />
                 <div className="absolute inset-[15%] rounded-full overflow-hidden z-10">
-                  <img src="/photos/bride-oval.jpg" alt="Andrea" className="w-full h-full object-cover grayscale" />
+                  <img src={brideImg} alt="Andrea" className="w-full h-full object-cover" />
                 </div>
               </div>
               <div className="flex flex-col text-left">
@@ -470,7 +477,7 @@ export default function RightSidebar({
                   className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
                 />
                 <div className="absolute inset-[15%] rounded-full overflow-hidden z-10">
-                  <img src="/photos/groom-oval.jpg" alt="Daniel" className="w-full h-full object-cover grayscale" />
+                  <img src={groomImg} alt="Daniel" className="w-full h-full object-cover" />
                 </div>
               </div>
             </div>
@@ -495,7 +502,7 @@ export default function RightSidebar({
                 className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
               />
               <div className="absolute inset-[16%] rounded-full overflow-hidden z-10">
-                <img src="/photos/our-story-oval.jpg" alt="Our Story" className="w-full h-full object-cover" />
+                <img src={storyImg} alt="Our Story" className="w-full h-full object-cover" />
               </div>
             </div>
 
@@ -525,10 +532,10 @@ export default function RightSidebar({
                 className="w-full h-auto object-contain relative z-20 pointer-events-none"
               />
               <div className="absolute top-[18%] left-[11%] w-[38%] h-[68%] rounded-full overflow-hidden z-10">
-                <img src="/photos/locket-left.jpg" alt="Couple" className="w-full h-full object-cover" />
+                <img src={locketLeftImg} alt="Couple" className="w-full h-full object-cover" />
               </div>
               <div className="absolute top-[26%] right-[10%] w-[38%] h-[68%] rounded-full overflow-hidden z-10">
-                <img src="/photos/locket-right.jpg" alt="Couple" className="w-full h-full object-cover" />
+                <img src={locketRightImg} alt="Couple" className="w-full h-full object-cover" />
               </div>
             </div>
 
@@ -768,7 +775,7 @@ export default function RightSidebar({
                   className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
                 />
                 <div className="absolute inset-[15%] rounded-full overflow-hidden z-10">
-                  <img src="/photos/our-story-oval.jpg" alt="Couple" className="w-full h-full object-cover" />
+                  <img src={storyImg} alt="Couple" className="w-full h-full object-cover" />
                 </div>
               </div>
             </div>
