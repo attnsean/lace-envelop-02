@@ -58,6 +58,7 @@ export default function RightSidebar({
   const [isOpeningFlap, setIsOpeningFlap] = useState(false);
   const [isPlayingMusic, setIsPlayingMusic] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Form State
   const [rsvpName, setRsvpName] = useState(guestName !== 'Guest Name' && guestName !== 'Tamu Undangan' ? guestName : '');
@@ -84,6 +85,13 @@ export default function RightSidebar({
     minutes: 0,
     seconds: 0,
   });
+
+  // Reset scroll to top when invitation opens
+  useEffect(() => {
+    if (isOpen && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [isOpen]);
 
   // Target Wedding Date (26 Juni 2026 / Project Target)
   useEffect(() => {
@@ -240,7 +248,7 @@ export default function RightSidebar({
   const locketRightImg = project?.opening_photo_url || LACE_ASSETS.locketRight;
 
   return (
-    <div className="relative w-full md:w-[42%] lg:w-[38%] h-[100dvh] overflow-y-auto overflow-x-hidden bg-[#22050c] text-white select-none scroll-smooth">
+    <div ref={scrollContainerRef} className="relative w-full md:w-[42%] lg:w-[38%] h-[100dvh] overflow-y-auto overflow-x-hidden bg-[#22050c] text-white select-none scroll-smooth">
       {/* Background Audio Element */}
       <audio ref={audioRef} src="/audio/bgm.mp3" loop preload="auto" />
 
@@ -294,9 +302,9 @@ export default function RightSidebar({
             initial={{ opacity: 1 }}
             exit={{
               opacity: 0,
-              y: -50,
+              y: 70,
               scale: 0.98,
-              transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1] },
+              transition: { duration: 0.5, ease: 'easeInOut' },
             }}
             className="relative min-h-[100dvh] w-full flex flex-col items-center justify-between py-10 px-6 bg-cover bg-center text-center overflow-hidden"
             style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
@@ -310,26 +318,31 @@ export default function RightSidebar({
             <div className="pt-2" />
 
             {/* Interactive Envelope with Doily & Wax Seal */}
-            <div className="relative w-full max-w-[340px] flex flex-col items-center">
-              {/* Heart Lace Doily: animates rising straight out of the envelope pocket */}
+            <div className="relative w-full max-w-[320px] flex flex-col items-center">
+              {/* Heart Lace Doily: initially hidden inside the envelope, smoothly emerges and is pulled upwards on click */}
               <motion.div
-                initial={{ y: 0, scale: 1, rotate: 0 }}
+                initial={{ opacity: 0, y: 50, scale: 0.8 }}
                 animate={
                   isOpeningFlap
                     ? {
-                        y: -195,
-                        scale: 1.12,
-                        rotate: -1.5,
-                        filter: 'drop-shadow(0 20px 25px rgba(0,0,0,0.45))',
+                        opacity: [0, 0.4, 1],
+                        y: [-10, -210],
+                        scale: [0.85, 1.05, 1.15],
+                        rotate: [0, -1.5],
+                        filter: 'drop-shadow(0 25px 30px rgba(0,0,0,0.5))',
                       }
                     : {
-                        y: [0, -6, 0],
-                        transition: { repeat: Infinity, duration: 4, ease: 'easeInOut' },
+                        opacity: 0,
+                        y: 50,
+                        scale: 0.8,
+                        rotate: 0,
                       }
                 }
-                transition={isOpeningFlap ? { duration: 1.05, ease: [0.16, 1, 0.3, 1] } : undefined}
-                className="relative z-10 w-[240px] h-[220px] -mb-16 cursor-pointer"
-                onClick={handleOpenInvitation}
+                transition={{
+                  duration: 1.15,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="absolute top-0 z-10 w-[240px] h-[220px] pointer-events-none"
               >
                 <img
                   src={LACE_ASSETS.coverHeartDoily}
@@ -345,10 +358,10 @@ export default function RightSidebar({
 
               {/* Cream Envelope with Wax Seal & Flower */}
               <motion.div
-                className="relative z-20 w-full max-w-[320px] filter drop-shadow-2xl cursor-pointer"
+                className="relative z-20 w-full filter drop-shadow-2xl cursor-pointer"
                 onClick={handleOpenInvitation}
-                animate={isOpeningFlap ? { y: 15, scale: 0.98 } : { y: 0, scale: 1 }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
+                animate={isOpeningFlap ? { y: 25, scale: 0.98 } : { y: 0, scale: 1 }}
+                transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -403,9 +416,12 @@ export default function RightSidebar({
           /* ========================================================================= */
           <motion.div
             key="invitation-content"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
+            initial={{ y: '-100vh', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{
+              duration: 1.15,
+              ease: [0.16, 1, 0.3, 1],
+            }}
             className="relative w-full flex flex-col"
           >
             {/* ----------------------------------------------------------------------- */}
