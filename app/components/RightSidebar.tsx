@@ -184,14 +184,17 @@ export default function RightSidebar({
     }
   };
 
-  // Gallery Photos matching PDF Page 10
-  const galleryItems = [
-    { src: '/photos/gallery-1.jpg', title: 'A Beautiful Stroll Together' },
-    { src: '/photos/gallery-2.jpg', title: 'Under The Sacred Veil' },
-    { src: '/photos/gallery-3.jpg', title: 'Mountain Horizon' },
-    { src: '/photos/gallery-4.jpg', title: 'Towards Our Forever' },
-    { src: '/photos/gallery-5.jpg', title: 'Running Hand in Hand' },
-  ];
+  // Dynamic Gallery Photos (From Supabase project with fallback to R2 high-res prewedding assets)
+  const dbGallery: string[] = (project?.gallery_photos && Array.isArray(project.gallery_photos) && project.gallery_photos.length > 0)
+    ? project.gallery_photos.map((p: any) => (typeof p === 'string' ? p : p?.url || p?.public_url || '')).filter(Boolean)
+    : [];
+
+  const activeGalleryUrls: string[] = dbGallery.length > 0 ? dbGallery : LACE_ASSETS.defaultGallery;
+
+  const galleryItems: Array<{ src: string; title: string }> = activeGalleryUrls.map((url: string, index: number) => ({
+    src: url,
+    title: `Our Moment ${index + 1}`,
+  }));
 
   return (
     <div className="relative w-full md:w-[42%] lg:w-[38%] h-[100dvh] overflow-y-auto overflow-x-hidden bg-[#22050c] text-white select-none scroll-smooth">
@@ -962,20 +965,21 @@ export default function RightSidebar({
                   onClick={() => setActivePhoto(item.src)}
                   className="relative w-full aspect-[2935/2515] filter drop-shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform"
                 >
-                  {/* Ornate Gold Frame Border */}
-                  <img
-                    src={LACE_ASSETS.goldRectFrameHal10}
-                    alt="Gold Frame"
-                    className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
-                  />
-                  {/* Prewedding Photo inside Frame */}
-                  <div className="absolute inset-[15%] overflow-hidden z-10 bg-neutral-900">
+                  {/* Prewedding Photo inside Frame (Placed neatly behind the ornate frame) */}
+                  <div className="absolute top-[21%] bottom-[21%] left-[15%] right-[15%] overflow-hidden z-10 bg-neutral-900">
                     <img
                       src={item.src}
                       alt={item.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
+
+                  {/* Ornate Gold Frame Border (On top of photo) */}
+                  <img
+                    src={LACE_ASSETS.goldRectFrameHal10}
+                    alt="Gold Frame"
+                    className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
+                  />
                 </div>
               ))}
             </div>

@@ -140,12 +140,12 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  height: 24px;
-  background-image: url('https://cdn.serastory.com/templates/lace-envelop-02/aset-bg.png');
+  height: 26px;
+  background-image: url('https://cdn.serastory.com/templates/lace-envelop-02/lace-border.png');
   background-repeat: repeat-x;
-  background-position: top;
-  background-size: auto 100%;
-  z-index: 10;
+  background-position: center top;
+  background-size: auto 26px;
+  z-index: 20;
   pointer-events: none;
 }
 
@@ -154,12 +154,12 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 24px;
-  background-image: url('https://cdn.serastory.com/templates/lace-envelop-02/aset-bg.png');
+  height: 26px;
+  background-image: url('https://cdn.serastory.com/templates/lace-envelop-02/lace-border.png');
   background-repeat: repeat-x;
-  background-position: bottom;
-  background-size: auto 100%;
-  z-index: 10;
+  background-position: center bottom;
+  background-size: auto 26px;
+  z-index: 20;
   pointer-events: none;
 }
 

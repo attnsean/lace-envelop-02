@@ -4,6 +4,16 @@ export const LACE_ASSETS = {
   // Page Backgrounds with authentic burgundy & lace border top and bottom
   bgStandard: `${LACE_CDN}/aset-bg.png`,
   bgTallGallery: `${LACE_CDN}/aset-bg-frame-foto.png`,
+  laceBorder: `${LACE_CDN}/lace-border.png`,
+  
+  // Gallery Default Photos from R2
+  defaultGallery: [
+    `${LACE_CDN}/gallery/gallery-1.webp`,
+    `${LACE_CDN}/gallery/gallery-2.webp`,
+    `${LACE_CDN}/gallery/gallery-3.webp`,
+    `${LACE_CDN}/gallery/gallery-4.webp`,
+    `${LACE_CDN}/gallery/gallery-5.webp`,
+  ],
   
   // Cover (Click to open)
   coverComposite: `${LACE_CDN}/cover-01.png`,
