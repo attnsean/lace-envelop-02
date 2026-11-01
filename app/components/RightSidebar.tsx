@@ -340,19 +340,30 @@ export default function RightSidebar({
 
               {/* Heart Silver Locket (Upper Right) with Couple Photos */}
               <div className="absolute top-[28%] right-[4%] w-[52%] z-20 filter drop-shadow-lg">
-                <div className="relative w-full">
+                <div className="relative w-full aspect-[3384/2028]">
                   <img
                     src={LACE_ASSETS.heartLocketHal1}
                     alt="Silver Locket"
-                    className="w-full h-auto object-contain relative z-20 pointer-events-none"
+                    className="w-full h-full object-contain relative z-20 pointer-events-none"
                   />
-                  {/* Photo in Left Heart */}
-                  <div className="absolute top-[18%] left-[11%] w-[38%] h-[68%] rounded-full overflow-hidden z-10">
-                    <img src={locketLeftImg} alt="Couple" className="w-full h-full object-cover" />
-                  </div>
-                  {/* Photo in Right Heart */}
-                  <div className="absolute top-[26%] right-[10%] w-[38%] h-[68%] rounded-full overflow-hidden z-10">
-                    <img src={locketRightImg} alt="Couple" className="w-full h-full object-cover" />
+                  {/* Photo container masked to the exact inner heart contours */}
+                  <div
+                    className="absolute inset-0 z-10 overflow-hidden"
+                    style={{
+                      WebkitMaskImage: `url(${LACE_ASSETS.locketMask})`,
+                      maskImage: `url(${LACE_ASSETS.locketMask})`,
+                      WebkitMaskSize: '100% 100%',
+                      maskSize: '100% 100%',
+                      WebkitMaskRepeat: 'no-repeat',
+                      maskRepeat: 'no-repeat',
+                    }}
+                  >
+                    <div className="absolute left-0 top-0 w-[50%] h-full">
+                      <img src={locketLeftImg} alt="Couple Left" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="absolute left-[50%] top-0 w-[50%] h-full">
+                      <img src={locketRightImg} alt="Couple Right" className="w-full h-full object-cover" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -445,7 +456,7 @@ export default function RightSidebar({
                   className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
                 />
                 <div className="absolute inset-[15%] rounded-full overflow-hidden z-10">
-                  <img src={brideImg} alt="Andrea" className="w-full h-full object-cover" />
+                  <img src={brideImg} alt="Andrea" className="w-full h-full object-cover object-[center_20%]" />
                 </div>
               </div>
               <div className="flex flex-col text-left">
@@ -477,7 +488,7 @@ export default function RightSidebar({
                   className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
                 />
                 <div className="absolute inset-[15%] rounded-full overflow-hidden z-10">
-                  <img src={groomImg} alt="Daniel" className="w-full h-full object-cover" />
+                  <img src={groomImg} alt="Daniel" className="w-full h-full object-cover object-top" />
                 </div>
               </div>
             </div>
@@ -525,17 +536,29 @@ export default function RightSidebar({
             <div className="lace-pattern-top" />
 
             {/* Double Heart Silver Locket */}
-            <div className="relative w-48 sm:w-56 filter drop-shadow-xl mb-3">
+            <div className="relative w-52 sm:w-60 aspect-[3384/2028] filter drop-shadow-xl mb-3">
               <img
                 src={LACE_ASSETS.silverLocketHal5}
                 alt="Silver Locket"
-                className="w-full h-auto object-contain relative z-20 pointer-events-none"
+                className="w-full h-full object-contain relative z-20 pointer-events-none"
               />
-              <div className="absolute top-[18%] left-[11%] w-[38%] h-[68%] rounded-full overflow-hidden z-10">
-                <img src={locketLeftImg} alt="Couple" className="w-full h-full object-cover" />
-              </div>
-              <div className="absolute top-[26%] right-[10%] w-[38%] h-[68%] rounded-full overflow-hidden z-10">
-                <img src={locketRightImg} alt="Couple" className="w-full h-full object-cover" />
+              <div
+                className="absolute inset-0 z-10 overflow-hidden"
+                style={{
+                  WebkitMaskImage: `url(${LACE_ASSETS.locketMask})`,
+                  maskImage: `url(${LACE_ASSETS.locketMask})`,
+                  WebkitMaskSize: '100% 100%',
+                  maskSize: '100% 100%',
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat',
+                }}
+              >
+                <div className="absolute left-0 top-0 w-[50%] h-full">
+                  <img src={locketLeftImg} alt="Couple Left" className="w-full h-full object-cover" />
+                </div>
+                <div className="absolute left-[50%] top-0 w-[50%] h-full">
+                  <img src={locketRightImg} alt="Couple Right" className="w-full h-full object-cover" />
+                </div>
               </div>
             </div>
 
@@ -731,7 +754,7 @@ export default function RightSidebar({
               <img
                 src={LACE_ASSETS.dressCodeLineArtHal7}
                 alt="Dress Code Illustration"
-                className="w-full h-full object-contain filter invert"
+                className="w-full h-full object-contain"
               />
             </div>
 
