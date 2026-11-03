@@ -221,3 +221,26 @@ body {
 .animate-ping-slow {
   animation: pingSlow 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
+
+/* Scrollbar hide & Per-Section Scroll Snap Utilities (identical to onyx-template) */
+.scrollbar-hide::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide,
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.snap-container-y {
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.snap-item-start {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}

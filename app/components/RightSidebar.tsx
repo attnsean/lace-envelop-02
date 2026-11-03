@@ -143,6 +143,9 @@ export default function RightSidebar({
     // Allow 1.1s for the heart doily to completely glide upwards out of the envelope
     setTimeout(() => {
       setIsOpen(true);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
     }, 1150);
   };
 
@@ -248,7 +251,10 @@ export default function RightSidebar({
   const locketRightImg = project?.opening_photo_url || LACE_ASSETS.locketRight;
 
   return (
-    <div ref={scrollContainerRef} className="relative w-full md:w-[42%] lg:w-[38%] h-[100dvh] overflow-y-auto overflow-x-hidden bg-[#22050c] text-white select-none scroll-smooth">
+    <div
+      ref={scrollContainerRef}
+      className="relative w-full md:w-[42%] lg:w-[38%] h-[100dvh] overflow-y-auto overflow-x-hidden snap-y snap-mandatory scroll-smooth no-scrollbar scrollbar-hide snap-container-y bg-[#22050c] text-white select-none"
+    >
       {/* Background Audio Element */}
       <audio ref={audioRef} src="/audio/bgm.mp3" loop preload="auto" />
 
@@ -306,7 +312,7 @@ export default function RightSidebar({
               scale: 0.98,
               transition: { duration: 0.5, ease: 'easeInOut' },
             }}
-            className="relative min-h-[100dvh] w-full flex flex-col items-center justify-between py-10 px-6 bg-cover bg-center text-center overflow-hidden"
+            className="relative min-h-[100dvh] h-[100dvh] w-full flex flex-col items-center justify-between py-10 px-6 bg-cover bg-center text-center overflow-hidden snap-start shrink-0 snap-item-start"
             style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
           >
             <AmbientSparkles />
@@ -428,7 +434,7 @@ export default function RightSidebar({
             {/* PAGE 1: SAVE THE DATE (HERO COMPOSITION)                               */}
             {/* ----------------------------------------------------------------------- */}
             <section
-              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center overflow-hidden"
+              className="relative h-[100dvh] min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center overflow-hidden snap-start snap-always shrink-0 snap-item-start"
               style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
             >
               <AmbientSparkles />
@@ -538,18 +544,24 @@ export default function RightSidebar({
                 </motion.div>
               </motion.div>
 
-              {/* Subtle Scroll Down Prompt */}
-              <motion.div
+              {/* Interactive Scroll Down Prompt */}
+              <motion.button
+                type="button"
+                onClick={() => {
+                  if (scrollContainerRef.current) {
+                    scrollContainerRef.current.scrollBy({ top: scrollContainerRef.current.clientHeight, behavior: 'smooth' });
+                  }
+                }}
                 initial={{ opacity: 0 }}
-                animate={{ opacity: [0.4, 0.9, 0.4] }}
+                animate={{ opacity: [0.5, 1, 0.5] }}
                 transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-                className="mt-4 flex flex-col items-center"
+                className="mt-4 flex flex-col items-center cursor-pointer group select-none"
               >
-                <span className="font-britannic text-[11px] tracking-widest uppercase text-neutral-300">Scroll Down</span>
-                <svg className="w-4 h-4 text-neutral-300 mt-1 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="font-britannic text-[11px] tracking-widest uppercase text-neutral-300 group-hover:text-[#e6c88b] transition-colors">Scroll Down</span>
+                <svg className="w-4 h-4 text-neutral-300 group-hover:text-[#e6c88b] transition-colors mt-1 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
-              </motion.div>
+              </motion.button>
 
               <div className="lace-pattern-bottom" />
             </section>
@@ -558,7 +570,7 @@ export default function RightSidebar({
             {/* PAGE 2: SCRIPTURE QUOTE (BIBLE VERSE)                                  */}
             {/* ----------------------------------------------------------------------- */}
             <section
-              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center overflow-hidden"
+              className="relative h-[100dvh] min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center overflow-hidden snap-start snap-always shrink-0 snap-item-start"
               style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
             >
               <AmbientSparkles />
@@ -599,7 +611,7 @@ export default function RightSidebar({
             {/* PAGE 3: THE COUPLE (ANDREA & DANIEL)                                    */}
             {/* ----------------------------------------------------------------------- */}
             <section
-              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center py-12 px-6 bg-cover bg-center overflow-hidden space-y-8"
+              className="relative h-[100dvh] min-h-[100dvh] w-full flex flex-col items-center justify-center py-12 px-6 bg-cover bg-center overflow-hidden space-y-8 snap-start snap-always shrink-0 snap-item-start"
               style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
             >
               <AmbientSparkles />
@@ -678,7 +690,7 @@ export default function RightSidebar({
             {/* PAGE 4: OUR STORY                                                      */}
             {/* ----------------------------------------------------------------------- */}
             <section
-              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden"
+              className="relative h-[100dvh] min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden snap-start snap-always shrink-0 snap-item-start"
               style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
             >
               <AmbientSparkles />
@@ -722,7 +734,7 @@ export default function RightSidebar({
             {/* PAGE 5: MAKE OUR DAY SPECIAL & COUNTDOWN & RSVP                         */}
             {/* ----------------------------------------------------------------------- */}
             <section
-              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12"
+              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12 snap-start snap-always shrink-0 snap-item-start"
               style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
             >
               <AmbientSparkles />
@@ -892,7 +904,7 @@ export default function RightSidebar({
             {/* PAGE 6: THE DETAIL (AKAD & RESEPSI SCHEDULE)                           */}
             {/* ----------------------------------------------------------------------- */}
             <section
-              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12"
+              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12 snap-start snap-always shrink-0 snap-item-start"
               style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
             >
               <AmbientSparkles />
@@ -975,7 +987,7 @@ export default function RightSidebar({
             {/* PAGE 7: DRESS CODE                                                     */}
             {/* ----------------------------------------------------------------------- */}
             <section
-              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12"
+              className="relative h-[100dvh] min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12 snap-start snap-always shrink-0 snap-item-start"
               style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
             >
               <AmbientSparkles />
@@ -1039,7 +1051,7 @@ export default function RightSidebar({
             {/* PAGE 8: ATTENDANCE CONFIRMATION & BLESSINGS FORM                        */}
             {/* ----------------------------------------------------------------------- */}
             <section
-              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12"
+              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12 snap-start snap-always shrink-0 snap-item-start"
               style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
             >
               <AmbientSparkles />
@@ -1194,7 +1206,7 @@ export default function RightSidebar({
             {/* PAGE 9: WEDDING GIFT (TWO HEART DOILIES WITH COPY BUTTONS)              */}
             {/* ----------------------------------------------------------------------- */}
             <section
-              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12"
+              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center p-6 bg-cover bg-center text-center overflow-hidden py-12 snap-start snap-always shrink-0 snap-item-start"
               style={{ backgroundImage: `url(${LACE_ASSETS.bgStandard})` }}
             >
               <AmbientSparkles />
@@ -1293,7 +1305,7 @@ export default function RightSidebar({
             {/* PAGE 10: GALLERY (5 GOLD ORNATE FRAMES) & WISHES WALL                  */}
             {/* ----------------------------------------------------------------------- */}
             <section
-              className="relative w-full flex flex-col items-center justify-start p-6 bg-cover bg-top text-center overflow-hidden py-16"
+              className="relative min-h-[100dvh] w-full flex flex-col items-center justify-start p-6 bg-cover bg-top text-center overflow-hidden py-16 snap-start snap-always shrink-0 snap-item-start"
               style={{ backgroundImage: `url(${LACE_ASSETS.bgTallGallery})` }}
             >
               <AmbientSparkles />
