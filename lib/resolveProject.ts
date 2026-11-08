@@ -261,22 +261,89 @@ export async function resolveProjectData(slug?: string, host?: string): Promise<
           .order('created_at', { ascending: false });
 
         result.wishes = wishesData || [];
+        // 5.5 Fetch love story items (checking love_stories table first, then love_story_items table)
+        let loveStories: any[] = [];
+        let loveStoryIntro: string = "";
 
-        // 5.5 Fetch love story items
-        const { data: loveStoryData } = await supabase
-          .from('love_story_items')
-          .select('*')
-          .eq('project_id', projectId)
-          .order('sort_order', { ascending: true });
+        // Check love_stories table (primary source saved by ProjectWizard)
+        const { data: lsTable } = await supabase
+          .from("love_stories")
+          .select("*")
+          .eq("project_id", projectId)
+          .maybeSingle();
+
+        if (lsTable) {
+          if (lsTable.intro_text) {
+            loveStoryIntro = lsTable.intro_text;
+          }
+          if (Array.isArray(lsTable.items) && lsTable.items.length > 0) {
+            loveStories = lsTable.items.map((item: any, idx: number) => {
+              const rawDate = item.date || item.year || "";
+              let formattedDate = rawDate;
+              if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+                const [y, m, d] = rawDate.split("-");
+                formattedDate = `${d}.${m}.${y}`;
+              }
+              return {
+                id: item.id || String(idx + 1),
+                year: formattedDate,
+                date: formattedDate,
+                title: item.title || "",
+                desc: item.description || item.desc || item.story || "",
+                story: item.description || item.desc || item.story || "",
+                description: item.description || item.desc || item.story || "",
+                photo_url: item.photo_url || "",
+                order: item.order !== undefined ? item.order : (item.sort_order !== undefined ? item.sort_order : idx + 1)
+              };
+            });
+          }
+        }
+
+        // Fallback to love_story_items table if loveStories is still empty
+        if (loveStories.length === 0) {
+          const { data: loveStoryData } = await supabase
+            .from("love_story_items")
+            .select("*")
+            .eq("project_id", projectId)
+            .order("sort_order", { ascending: true });
+
+          if (loveStoryData && loveStoryData.length > 0) {
+            loveStories = loveStoryData.map((item: any, idx: number) => {
+              const rawDate = item.year || item.date || "";
+              let formattedDate = rawDate;
+              if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+                const [y, m, d] = rawDate.split("-");
+                formattedDate = `${d}.${m}.${y}`;
+              }
+              return {
+                id: item.id || String(idx + 1),
+                year: formattedDate,
+                date: formattedDate,
+                title: item.title || "",
+                desc: item.description || item.desc || item.story || "",
+                story: item.description || item.desc || item.story || "",
+                description: item.description || item.desc || item.story || "",
+                order: item.sort_order !== undefined ? item.sort_order : idx + 1
+              };
+            });
+          }
+        }
+
+        // Fallback to embedded fields in project
+        if (loveStories.length === 0 && result.project) {
+          const rawEmbedded = (result.project as any)?.love_story_items || (result.project as any)?.wedding_stories;
+          if (Array.isArray(rawEmbedded)) {
+            loveStories = rawEmbedded;
+          } else if (typeof rawEmbedded === "string") {
+            try { loveStories = JSON.parse(rawEmbedded); } catch {}
+          }
+        }
 
         if (result.project) {
-          result.project.love_story_items = (loveStoryData || []).map(item => ({
-            id: item.id,
-            year: item.year,
-            title: item.title,
-            desc: item.description,
-            order: item.sort_order
-          }));
+          result.project.love_story_items = loveStories;
+          if (loveStoryIntro && !result.project.love_story) {
+            result.project.love_story = loveStoryIntro;
+          }
         }
 
         // 6. Fetch RSVP attendance stats (attending sum)
