@@ -63,10 +63,11 @@ export default function RightSidebar({
   const groomNickname = formatPersonName(project?.groom_nickname) || 'Daniel';
   const brideFullName = formatPersonName(project?.bride_name) || 'Andrea Stefani';
   const groomFullName = formatPersonName(project?.groom_name) || 'Daniel Sianipar';
-  const brideFather = project?.bride_father ? `Bapak ${project.bride_father}` : 'Bapak Samuel';
-  const brideMother = project?.bride_mother ? `Ibu ${project.bride_mother}` : 'Ibu Ruth';
-  const groomFather = project?.groom_father ? `Bapak ${project.groom_father}` : 'Bapak Simon';
-  const groomMother = project?.groom_mother ? `Ibu ${project.groom_mother}` : 'Ibu Silvia';
+  const isDemo = !project || (!project.id && !project.project_name);
+  const brideFather = isDemo ? 'Bapak Samuel' : (project?.bride_father ? (project.bride_father.startsWith('Bapak') ? project.bride_father : `Bapak ${project.bride_father}`) : '');
+  const brideMother = isDemo ? 'Ibu Ruth' : (project?.bride_mother ? (project.bride_mother.startsWith('Ibu') ? project.bride_mother : `Ibu ${project.bride_mother}`) : '');
+  const groomFather = isDemo ? 'Bapak Simon' : (project?.groom_father ? (project.groom_father.startsWith('Bapak') ? project.groom_father : `Bapak ${project.groom_father}`) : '');
+  const groomMother = isDemo ? 'Ibu Silvia' : (project?.groom_mother ? (project.groom_mother.startsWith('Ibu') ? project.groom_mother : `Ibu ${project.groom_mother}`) : '');
 
   // Form State
   const [rsvpName, setRsvpName] = useState(guestName !== 'Guest Name' && guestName !== 'Tamu Undangan' ? guestName : '');
@@ -690,12 +691,11 @@ export default function RightSidebar({
                 <h2 className="font-abigail text-4xl sm:text-5xl text-white leading-tight">
                   {brideNickname}
                 </h2>
-                <p className="font-britannic text-xs text-neutral-200 uppercase tracking-widest mt-1">
-                  Putri dari {brideFather}
-                </p>
-                <p className="font-britannic text-xs text-neutral-200 uppercase tracking-widest">
-                  &amp; {brideMother}
-                </p>
+                {Boolean(brideFather || brideMother) && (
+                  <p className="font-britannic text-xs text-neutral-200 uppercase tracking-widest mt-1">
+                    Putri dari {brideFather}{Boolean(brideFather && brideMother) ? " & " : ""}{brideMother}
+                  </p>
+                )}
               </div>
             </motion.div>
 
@@ -711,12 +711,11 @@ export default function RightSidebar({
                 <h2 className="font-abigail text-4xl sm:text-5xl text-white leading-tight">
                   {groomNickname}
                 </h2>
-                <p className="font-britannic text-xs text-neutral-200 uppercase tracking-widest mt-1">
-                  Putra dari {groomFather}
-                </p>
-                <p className="font-britannic text-xs text-neutral-200 uppercase tracking-widest">
-                  &amp; {groomMother}
-                </p>
+                {Boolean(groomFather || groomMother) && (
+                  <p className="font-britannic text-xs text-neutral-200 uppercase tracking-widest mt-1">
+                    Putra dari {groomFather}{Boolean(groomFather && groomMother) ? " & " : ""}{groomMother}
+                  </p>
+                )}
               </div>
               <div className="relative w-36 sm:w-40 aspect-[2173/2767] shrink-0 filter drop-shadow-xl group">
                 <img
